@@ -21,10 +21,10 @@ When finished, a huge amount of output will have been written out. The LSTMs the
  * **raw\_output.txt** - The dataset, with events replaced by corresponding types. For example, suppose we have the input dataset: 
       `A B C D E F`
     And B, C and D are found to belong to an activity of type new\_event\_3, then the raw\_output for this dataset would be:
-      `A new\_event\_3 new\_event\_3 new\_event\_3 E F`
+      `A new_event_3 new_event_3 new_event_3 E F`
     I.e. B, C and D are replaced with new\_event 3.
  * **final\_output.txt** - The dataset, with entire activities replaced by a single event of the corresponding type. So the A B C D E F dataset above would simply be replaced by: 
-      `A new\_event\_3 E F`
+      `A new_event_3 E F`
  * **/probabilities** - Directory of probability files. There is one file for each lookahead offset, named lstm\_probability\_offset\_1 through to lstm\_probability\_offset\_m. Each file consists of probability vectors, one per line, produced by the corresponding LSTM.
  * **/word2ids** - Directory for files holding the word2ids dictionary for each LSTM. This dictionary is used in the TensorFlow code to map event names (words) to offsets within the output (probability) vectors. The files are named lstm\_word2id\_offset\_1 through to lstm\_word2id\_offset\_m.
  * **/perplexity** - Directory of files holding the perplexity of each LSTM. Note that this is just a single floating-point value stored in a file. The files are named lstm\_perplexity\_offset\_1 through to lstm\_perplexity\_offset\_m.
