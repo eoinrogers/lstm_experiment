@@ -1,4 +1,4 @@
-import random, sys, math
+import random, sys, math, integrate
 
 def overlap(one, two, min_type_overlap): 
     count_one = sum([(1 if item in two else 0) for item in one])
@@ -212,7 +212,6 @@ def load_parameter_from_shell_script(script_path, parameter):
     return None
 
 if __name__ == '__main__':
-    import integrate
     k3_test_root = load_parameter_from_shell_script('run.sh', 'K3_TEST_ROOT')
     test_files = ['/ptb.test.txt', '/ptb.train.txt', '/ptb.valid.txt']
     ntf = []
