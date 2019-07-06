@@ -213,7 +213,7 @@ def load_parameter_from_shell_script(script_path, parameter):
 
 if __name__ == '__main__':
     k3_test_root = load_parameter_from_shell_script('run.sh', 'K3_TEST_ROOT')
-    test_files = ['/ptb.test.txt', '/ptb.train.txt', '/ptb.valid.txt']
+    test_files = ['/ptb.train.txt', '/ptb.valid.txt', '/ptb.test.txt']
     ntf = []
     for item in test_files: ntf.append(k3_test_root + item)
     ground = integrate.load_ground(ntf)

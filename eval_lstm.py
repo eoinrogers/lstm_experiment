@@ -27,23 +27,40 @@ probs_file = hierarchy.load_parameter_from_shell_script('run.sh', 'PROBABILITY_F
 
 
 def pre_load_everything(shell_script, probabilities, word2id, test_directory): 
-    probs_files = hierarchy.load_parameter_from_shell_script(shell_script, probabilities)
+    # Get full path to the probability directory
+    probs_files = hierarchy.load_parameter_from_shell_script(shell_script, probabilities) 
+    
+    # Get full path to the word2id directory
     word2id_files = hierarchy.load_parameter_from_shell_script(shell_script, word2id)
+    
+    # Assemble full paths to the three files containing the test dataset
     test_data = [os.path.join(test_directory, item) for item in 'ptb.train.txt ptb.valid.txt ptb.test.txt'.split()]
+    
+    # Load each of the three test datset files into memory, convert each to 
+    # a list, and concatenate the lists together 
     data = []
     for item in test_data: 
         file_handler = open(item, 'r')
         file_contents = file_handler.read()
         data += [word.strip() for word in file_contents.split()]
         file_handler.close()
+    
+    # Return the two directory paths and the dataset
     return probs_files, word2id_files, data
 
 def generate_lstm_predictions(probs_file, word2ids_file, lookahead_offset, n): 
+    # Get the full path for the probability and word2id files
     probabilities = probs_file.format(lookahead_offset)
     word2id_path = word2ids_file.format(lookahead_offset)
+    
+    # Load the word2id file as a dictionary, and then convert it 
+    # to a list of words 
     word2id_dict = hierarchy.integrate.reader.readin_word2id(word2id_path)
     word2id = [None for item in range(len(word2id_dict))]
     for item in word2id_dict: word2id[word2id_dict[item]] = item
+    
+    # Open the probability file and generate the top n 
+    # most likely events according to the network
     with open(probabilities, 'r') as p: 
         for line in p: 
             vector = [float(item.strip()) for item in line.split(',')]
@@ -61,7 +78,7 @@ def eval_single_offset(probs_file, word2ids_file, data, lookahead_offset, n):
     return (score / i) * 100
 
 if __name__ == '__main__':
-    probs_files, words2id_files, data = pre_load_everything('run.sh', 'PROBABILITY_FILE', 'WORD2ID_FILE', '/home/eoin/programming/lstm/test_data')
+    probs_files, words2id_files, data = pre_load_everything('run.sh', 'PROBABILITY_FILE', 'WORD2ID_FILE', 'test_data')
     offset = 1
     while os.path.exists(probs_files.format(offset)): 
         print('Offset: {}, Accuracy: {:.2f}%'.format(offset, eval_single_offset(probs_files, words2id_files, data, offset, 3)))

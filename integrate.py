@@ -99,8 +99,8 @@ def naive_integrate_single_lookahead(linkset, path, ground, word2id, lookahead_o
      a single link, consisting of indexes into the dataset.
     path: path to the LSTMs probabilities. 
     ground: The ground truth, as produced by the load_ground() function
-    word2id: Python dictionary mapping event names (words) to offsets within the 
-     output layer of the LSTM
+    word2id: Python list mapping events to one-hot-encodings (the ith element is the 
+     activity corresponding to the ith element of a one-hot-encoding) 
     lookahead_offset: integer value for the offset within the lookahead
     destination: output file to write the linkset to
     save_per: How frequently the function should save as it progresses. For example, if set
@@ -111,15 +111,19 @@ def naive_integrate_single_lookahead(linkset, path, ground, word2id, lookahead_o
      ending with X. 
     '''
     print(lookahead_offset, end=' ')
+    count = 0
     for i, vector in enumerate(gen_data(path)): # Iterate through each probability vector produced by the LSTM
         if i % save_per == 0: save_linkset(linkset, destination) # Write to output if save_per requires it
         if i + lookahead_offset >= len(ground): break # If we've run past the end of the lookahead, exit the loop
         most_likely = sort_ids_by_probability(vector, n) # Find the top n most likely predictions of the LSTM
-        ground_item = word2id[ground[i+lookahead_offset-1]] # The the current offset for the `correct answer' in the output layer
+        ground_item = word2id.index(ground[i+lookahead_offset]) # The the current offset for the `correct answer' in the output layer
         
         # If the `correct answer' appears in the most_likely list, add a link between the current lookahead
         # offset and the last value in the sliding window. 
-        if ground_item in most_likely: linkset = insert_link(linkset, i, i + lookahead_offset)
+        if ground_item in most_likely: 
+            linkset = insert_link(linkset, i, i + lookahead_offset)
+            count += 1
+    print('Raw accuracy: {:.2f}%'.format((count/i)*100), end=' ')
     save_linkset(linkset, destination) # Save the full linkset when finished 
     return linkset
 
@@ -162,7 +166,9 @@ def naive_integrate(path_proto, ground, word2id_proto, destination, save_per, n)
     path = path_proto.format(lookahead_offset)
     linkset = []
     while os.path.exists(path): # Keep iterating until we have come to a lookahead offset that does not exist 
-        word2id = reader.readin_word2id(word2id_proto.format(lookahead_offset)) # Load the associated word2id 
+        word2id_dict = reader.readin_word2id(word2id_proto.format(lookahead_offset)) # Load the associated word2id 
+        word2id = [None for item in range(len(word2id_dict))]
+        for item in word2id_dict: word2id[word2id_dict[item]] = item
         linkset = naive_integrate_single_lookahead(linkset, path, ground, word2id, lookahead_offset, destination, save_per, n) # Integrate for this lookahead
         print(len(linkset)) # Display the length of the linkset (i.e. tell us how many links we have)
         
@@ -193,7 +199,7 @@ def perplexity_integrate(perplexity_proto, path_proto, data, word2id_proto, dest
     return output
 
 if __name__ == '__main__':
-    data = load_ground(['/media/eoin/BigDisk/kyoto3/lstm_original/ptb.test.txt', '/media/eoin/BigDisk/kyoto3/lstm_original/ptb.train.txt', '/media/eoin/BigDisk/kyoto3/lstm_original/ptb.valid.txt'])
+    data = load_ground(['/media/eoin/BigDisk/kyoto3/lstm_original/ptb.train.txt', '/media/eoin/BigDisk/kyoto3/lstm_original/ptb.valid.txt', '/media/eoin/BigDisk/kyoto3/lstm_original/ptb.test.txt'])
     destination = 'test_linkset.txt'
     #naive_integrate('/media/eoin/BigDisk/working/lstm_k3_probs_{}', data, '/media/eoin/BigDisk/working/lstm_k3_word2id_{}', destination, 1000, 3)
     #perplexity_integrate('/media/eoin/BigDisk/working/lstm_k3_perplexity_{}', '/media/eoin/BigDisk/working/lstm_k3_probs_{}', data, '/media/eoin/BigDisk/working/lstm_k3_word2id_{}', 'perplexity_output.csv', 1000)
