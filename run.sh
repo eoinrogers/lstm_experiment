@@ -4,9 +4,10 @@
 # Before running, set the parameters here, as documented in the README file. You'll probably only want to change the first three parameters
 K3_TRAIN_ROOT=train_data
 K3_TEST_ROOT=test_data
-LOOKAHEAD_LEN=20
+LOOKAHEAD_LEN=10
 # You probably won't want to change the parameters below here
-PROBABILITY_FILE=outputs/probabilities/lstm_probabilities_offset_{}
+PROBABILITY_FILE=/media/eoin/BigDisk/ndeltas/lstm_deltas_offset_{}
+#outputs/probabilities/lstm_probabilities_offset_{}
 WORD2ID_FILE=outputs/word2ids/lstm_word2id_offset_{}
 PERPLEXITY_FILE=outputs/perplexity/lstm_perplexity_{}
 LINKSET=outputs/lstm_linkset.txt

@@ -76,13 +76,13 @@ def save_matrix(matrix, destination):
         f.write('{}\n'.format(output))
     f.close()
 
-def sort_ids_by_probability(input_vector, n): 
+def sort_ids_by_probability(input_vector, n, threshold): 
     '''
     Get the indexes of the top n largest values in input_vector
     '''
     output = []
     input_vector = input_vector[:] # Don't destroy the object on the caller. 
-    while len(output) < n: 
+    while len(output) < n and max(input_vector) >= threshold: 
         largest = input_vector.index(max(input_vector))
         output.append(largest)
         input_vector = [item for i, item in enumerate(input_vector) if i != largest]

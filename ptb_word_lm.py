@@ -337,14 +337,14 @@ class SmallConfig(object):
   init_scale = 0.1
   learning_rate = 1.0
   max_grad_norm = 5
-  num_layers = 2
+  num_layers = 1
   num_steps = 30
-  hidden_size = 200
+  hidden_size = 50
   max_epoch = 4
   max_max_epoch = 10
   keep_prob = 1.0
   lr_decay = 0.99
-  batch_size = 10
+  batch_size = 20
   vocab_size = 10000
   rnn_mode = BLOCK
 
