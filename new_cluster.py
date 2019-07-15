@@ -65,7 +65,7 @@ def write_out(activities, baseline, destination):
     handler.close()
 
 if __name__ == '__main__':
-    g = load_ground_labels('/media/eoin/BigDisk/kyoto3/k3_ground_non_interleaved.txt')
+    g = load_ground_labels('k3_ground_non_interleaved.txt')
     train = open('test_data/ptb.train.txt', 'r')
     valid = open('test_data/ptb.valid.txt', 'r')    
     test = open('test_data/ptb.test.txt', 'r')
