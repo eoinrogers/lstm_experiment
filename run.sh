@@ -34,6 +34,8 @@ do
 done
 
 # Part 3: Build and cluster the links 
-python3 hierarchy.py
+#python3 hierarchy.py
+python3 new_cluster.py
+
 
 
