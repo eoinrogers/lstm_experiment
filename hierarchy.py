@@ -218,11 +218,11 @@ if __name__ == '__main__':
     for item in test_files: ntf.append(k3_test_root + item)
     ground = integrate.load_ground(ntf)
     destination = load_parameter_from_shell_script('run.sh', 'LINKSET')
-    integrate.naive_integrate(load_parameter_from_shell_script('run.sh', 'PROBABILITY_FILE'), ground, load_parameter_from_shell_script('run.sh', 'WORD2ID_FILE'), destination, 1000, 3)
+    integrate.naive_integrate(load_parameter_from_shell_script('run.sh', 'DELTAS_FILE'), ground, load_parameter_from_shell_script('run.sh', 'WORD2ID_FILE'), destination, 1000, 3)
     linkset = load_linkset(destination)
-    cluster_types_2(ground, linkset, load_parameter_from_shell_script('run.sh', 'CLUSTER_FILE'), 16, centroids=True)
-    types_to_raw_output(ground, linkset, load_parameter_from_shell_script('run.sh', 'CLUSTER_FILE'), load_parameter_from_shell_script('run.sh', 'RAW_OUTPUT'))
-    ttd2(ground, linkset, load_parameter_from_shell_script('run.sh', 'CLUSTER_FILE'), load_parameter_from_shell_script('run.sh', 'FINAL_OUTPUT'))
+    #cluster_types_2(ground, linkset, load_parameter_from_shell_script('run.sh', 'CLUSTER_FILE'), 16, centroids=True)
+    #types_to_raw_output(ground, linkset, load_parameter_from_shell_script('run.sh', 'CLUSTER_FILE'), load_parameter_from_shell_script('run.sh', 'RAW_OUTPUT'))
+    #ttd2(ground, linkset, load_parameter_from_shell_script('run.sh', 'CLUSTER_FILE'), load_parameter_from_shell_script('run.sh', 'FINAL_OUTPUT'))
 
 
 
