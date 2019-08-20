@@ -64,18 +64,69 @@ def write_out(activities, baseline, destination):
         handler.write('new_event_{}\n'.format(index))
     handler.close()
 
+def seperate_links(ground_is, ground_vs): 
+    output = []
+    working = []
+    previous = ground_is[0] - 1
+    for index in range(len(ground_is)): 
+        if ground_is[index] == previous + 1: 
+            working.append(ground_is[index])
+        else: 
+            output.append([ground_vs[item] for item in working])
+            working = [ground_is[index]]
+        previous = ground_is[index]
+    if len(working) > 0: output.append([ground_vs[item] for item in working])
+    return output
+
+def seperate_all_links(ground_dict, events): 
+    output = {}
+    for item in ground_dict: 
+        output[item] = seperate_links(ground_dict[item], events)
+    return output
+
+def combine_discrete(dataset): 
+    output = []
+    for item in dataset:
+        if item[-1].isnumeric(): 
+            sub_item = item.split('_')
+            new_item = ''.join(['{}_'.format(i) for i in sub_item[:-1]])[:-1]
+            output.append(new_item)
+        else: output.append(item)
+    return output
+
+def stats(dataset): 
+    output = {}
+    for item in dataset: 
+        if item in output: output[item] += 1
+        else: output[item] = 1
+    for item in output: 
+        print('{}: {}'.format(item, output[item]))
+    return output
+
 if __name__ == '__main__':
     g = load_ground_labels('k3_ground_non_interleaved.txt')
     train = open('test_data/ptb.train.txt', 'r')
     valid = open('test_data/ptb.valid.txt', 'r')    
     test = open('test_data/ptb.test.txt', 'r')
     d = [item for item in train.read().strip().split()] + [item for item in valid.read().strip().split()] + [item for item in test.read().strip().split()]
+    d = combine_discrete(d)
     train.close(); valid.close(); test.close()
 
     l = load_linkset('/media/eoin/BigDisk/lstm/outputs/lstm_linkset.txt')
+    l2 = [[d[i] for i in range(min(link), max(link)+1)] for link in l]
+    print(l2)
 
     activs = linkset_to_activities(g, l)
     write_out(activs, 0, 'outputs/clusters.txt')
+    activ2links = {}
+    for i in range(len(activs)): 
+        act_id = activs[i]
+        link = l2[i]
+        if act_id in activ2links: activ2links[act_id].append(link)
+        else: activ2links[act_id] = [link]
+    for i in range(len(activ2links)): 
+        print('Links for activity {}:'.format(i))
+        for lk in activ2links[i]: print(lk)
 
     import hierarchy as h
 

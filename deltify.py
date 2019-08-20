@@ -12,7 +12,7 @@ def deltify_file(path, destination):
             else: vector = [line[i] - previous[i] for i in range(len(line))]
             string = ''.join(['{}, '.format(item) for item in vector])[:-2]
             output.write('{}\n'.format(string))
-            previous = vector
+            previous = line
         output.close()
 
 def deltify_directory(incoming, outgoing): 
