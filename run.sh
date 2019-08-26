@@ -35,8 +35,8 @@ done
 
 # Part 3: Build and cluster the links 
 python3 deltify.py $PROBABILITY_FILE $DELTAS_FILE
-python3 hierarchy.py
-python3 new_cluster.py
+#python3 hierarchy.py
+#python3 new_cluster.py
 
 
 
