@@ -337,11 +337,11 @@ class SmallConfig(object):
   init_scale = 0.1
   learning_rate = 1.0
   max_grad_norm = 5
-  num_layers = 1
-  num_steps = 30
-  hidden_size = 50
+  num_layers = 2
+  num_steps = 20
+  hidden_size = 150
   max_epoch = 4
-  max_max_epoch = 10
+  max_max_epoch = 20
   keep_prob = 1.0
   lr_decay = 0.99
   batch_size = 20
@@ -406,6 +406,7 @@ def run_epoch(session, model, eval_op=None, verbose=False, write_to=None):
   costs = 0.0
   iters = 0
   state = session.run(model.initial_state)
+  big_output_str = ''
 
   fetches = {
       "cost": model.cost,
@@ -414,7 +415,6 @@ def run_epoch(session, model, eval_op=None, verbose=False, write_to=None):
   }
   if eval_op is not None:
     fetches["eval_op"] = eval_op
-  if write_to: output_file = open(write_to, 'w')
 
   for step in range(model.input.epoch_size):
     feed_dict = {}
@@ -428,7 +428,7 @@ def run_epoch(session, model, eval_op=None, verbose=False, write_to=None):
     if write_to: 
       #print(vals['probs'].shape)
       output_str = ''.join(['{}, '.format(item) for item in vals['probs'][0][0]])
-      output_file.write('{}\n'.format(output_str[:-2]))
+      big_output_str += '{}\n'.format(output_str[:-2])
 
     costs += cost
     iters += model.input.num_steps
@@ -438,7 +438,11 @@ def run_epoch(session, model, eval_op=None, verbose=False, write_to=None):
             (step, np.exp(costs / iters),
              iters * model.input.batch_size * max(1, FLAGS.num_gpus) /
              (time.time() - start_time)))
-  if write_to: output_file.close()
+  if write_to: 
+    print('Writing results out...')
+    output_file = open(write_to, 'w')
+    output_file.write(big_output_str)
+    output_file.close()
 
   return np.exp(costs / iters)
 

@@ -60,8 +60,8 @@ def load_dataset(path):
         fh.close()
     return output
 
-def main(): 
-    d, i, o, w2i, perp, wl, ll = getargs()
+def main(args=None): 
+    d, i, o, w2i, perp, wl, ll = getargs() if args == None else args
     n = 1
     incoming = i.format(n)
     outgoing = o.format(n)

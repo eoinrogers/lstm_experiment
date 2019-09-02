@@ -124,8 +124,8 @@ def save_ground_truth(ground_truth, destination):
     handler.write(output)
     handler.close()
 
-def main(): 
-    datadir, linkproto, grdpath, destpath, newdir, newgrd = getargs()
+def main(args=None): 
+    datadir, linkproto, grdpath, destpath, newdir, newgrd = getargs() if args == None else args
     dataset = gen_links.load_dataset(datadir)
     ground_truth = load_ground_truth(grdpath)
     candidates = {}
