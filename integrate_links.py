@@ -4,12 +4,16 @@ def getargs():
     parser = argparse.ArgumentParser('Combine links based on perplexity and probability measures.')
     parser.add_argument('dataset', help='Path to the dataset directory (note this should be a directory, not a file)', type=str)
     parser.add_argument('linkproto', help='Prototype for the files containing the candidate links written out by gen_links.py', type=str)
+    parser.add_argument('input_typeinfo', hep='Path to the previous typeinfo file, which is used to determine the types of links. Can be set to NULL if none exist', type=str)
+    parser.add_argument('output_typeinfo', hep='Path to write the new typeinfo file to', type=str)
     parser.add_argument('ground', help='Path to the ground truth file', type=str)
     parser.add_argument('destination', help='Path to a \'final\' linkset file that will contain the links chosen to be written into the new dataset', type=str)
     parser.add_argument('newdata', help='Path to the directory that the new dataset shold be written into', type=str)
     parser.add_argument('newground', help='Path to write the new ground truth into', type=str)
+    parser.add_argument('min_num', help='Minimum number an event needs to occur to be accepted', type=int)
+    parser.add_argument('sizeacct', help='Take the size of the link into account when integrating', type=bool)
     args = parser.parse_args()
-    return args.dataset, args.linkproto, args.ground, args.destination, args.newdata, args.newground
+    return args.dataset, args.linkproto, args.input_typeinfo, args.output_typeinfo, args.ground, args.destination, args.newdata, args.newground, args.min_num, args.sizeacct
 
 def load_ground_truth(path): 
     handler = open(path, 'r')
@@ -18,6 +22,17 @@ def load_ground_truth(path):
     handler.close()
     line = [item.index('1') for item in line.split()]
     return line
+
+def load_typeinfo(path): 
+    handler = open(path, 'r')
+    output = {}
+    for line in handler: 
+        line = [item.strip() for item in line.strip()]
+        if len(line) == 3: line.append(1)
+        if len(line) != 4: continue
+        output['{} {}'.format(line[0], line[1])] = line[2], line[3]
+    handler.close()
+    return output
 
 def update_candidate_dict_for_single_file(path, candidates): 
     for line in open(path, 'r'): 
@@ -33,16 +48,18 @@ def update_candidate_dict_for_single_file(path, candidates):
         else: 
             candidates[j] = [(i, j, p)]
 
-def sum_probability(t, candidates): 
+def sum_probability(t, candidates, sizeacct): 
     i, j, p = t
     for k, l, q in candidates[j]: 
-        if l == j: return p + q
+        if l == j:
+            if sizeacct: return (p + q) * ((j - i) / 400)
+            else: return p + q
 
-def build_final_linkset(candidates): 
+def build_final_linkset(candidates, sizeacct): 
     best = {}
     for i in candidates:
         l = candidates[i]
-        ps = [sum_probability(item, candidates) for item in l]
+        ps = [sum_probability(item, candidates, sizeacct) for item in l]
         index = ps.index(max(ps))
         best[i] = (l[index][0], l[index][1], ps[index])
     links = {}
@@ -56,7 +73,6 @@ def build_final_linkset(candidates):
     i = 0
     length = len(links)
     visited = 0
-    print(links)
     while visited < length: 
         #gen_links.print_progress(visited, length)
         if i in links:
@@ -72,32 +88,62 @@ def save_linkset(linkset, path):
         handler.write('{} {} {}\n'.format(i, j, p))
     handler.close()
 
-def build_new_dataset(dataset, linkset, ground_truth): 
-    if len(linkset) == 0: return dataset[:]
-    events = {}
+def remove_uncommon_candidate_events(output, type_dict, contval, threshold): 
+    temp = [item for item in type_dict.values()]
+    names = [item[0] for item in temp]
+    counts = [item[1] for item in temp]
+    cand2new = {}
+    for i in range(len(output)): 
+        if type(output[i]) == tuple: 
+            original_value, sibling_index, type_value = output[i]
+            count = counts[names.index(type_value)]
+            if count < threshold: 
+                output[i] = original_value
+            if type_value.startswith('candidate_event_'): 
+                if type_value in cand2new: type_value = cand2new[type_value]
+                else: 
+                    ne = 'new_event_{}'.format(contval)
+                    contval += 1
+                    cand2new[type_value] = ne
+                    type_value = ne
+            output[i] = type_value
+            output[sibling_index] = None #type_value
+    for i in range(len(temp)): 
+        if names[i].startswith('candidate_event'): 
+            names[i] = cand2new[names[i]]
+    type_dict = { temp[i] : (names[i], counts[i]) for i in range(len(temp)) if counts[i] >= threshold }
+    return output, type_dict
+
+def build_new_dataset(dataset, linkset, ground_truth, typeinfo, threshold): 
+    events = load_typeinfo(typeinfo) if typeinfo != 'NULL' else {}
+    if len(linkset) == 0: return dataset[:], ground_truth, events
+    print('Before compression:', len(dataset))
     contval = 0
     for i in dataset: 
         if i.startswith('new_event_'): 
             n = int(i.split('_')[-1])
             if n >= contval: contval = n + 1
+    candval = contval
     output = dataset[:]
     for i, j, p in linkset: 
         assert(dataset[i] != None and dataset[j] != None)
         contents_one = '{} {}'.format(dataset[i], dataset[j])
         contents_two = '{} {}'.format(dataset[j], dataset[i])
         if contents_one in events: 
-            link_type = events[contents_one]
+            link_type = events[contents_one][0]
+            events[contents_one] = (events[contents_one][0], events[contents_one][1]+1)
         elif contents_two in events: 
-            link_type = events[contents_two]
+            link_type = events[contents_two][0]
+            events[contents_two] = (events[contents_two][0], events[contents_two][1]+1)
         else: 
-            link_type = 'new_event_{}'.format(contval)
-            events[contents_one] = link_type
-            contval += 1
-        output[i] = link_type
-        output[j] = None
-    print(events)
+            link_type = 'candidate_event_{}'.format(candval)
+            events[contents_one] = (link_type, 1)
+            candval += 1
+        output[i] = (output[i], j, link_type)
+    output, new_events = remove_uncommon_candidate_events(output, events, contval, threshold)
     new_ground_truth = [item for item, corresponding_event in zip(ground_truth, output) if corresponding_event != None]
-    return [item for item in output if item != None], ground_truth
+    print('After compression:', len([item for item in output if item != None]))
+    return ([item for item in output if item != None], new_ground_truth, new_events)
 
 def save_dataset(dataset, path, train_pc=.6, test_pc=.2, valid_pc=.2): 
     i = round(len(dataset) * train_pc)
@@ -124,24 +170,34 @@ def save_ground_truth(ground_truth, destination):
     handler.write(output)
     handler.close()
 
+def save_typeinfo(type_dict, destination): 
+    handler = open(destination, 'w')
+    for t in type_dict: 
+        handler.write('{} {} {}\n'.format(t, type_dict[t][0], type_dict[t][1]))
+    handler.close()
+
 def main(args=None): 
-    datadir, linkproto, grdpath, destpath, newdir, newgrd = getargs() if args == None else args
+    datadir, linkproto, input_typeinfo, output_typeinfo, grdpath, destpath, newdir, newgrd, min_num, sizeacct = getargs() if args == None else args
     dataset = gen_links.load_dataset(datadir)
     ground_truth = load_ground_truth(grdpath)
     candidates = {}
     n = 1
     linkset_path = linkproto.format(n)
+    print('kdsfljl', datadir)
     print('Loading data...', end=' ')
     while os.path.exists(linkset_path): 
         update_candidate_dict_for_single_file(linkset_path, candidates)
         n += 1
         linkset_path = linkproto.format(n)
     print('Done!')
-    linkset = build_final_linkset(candidates)
+    linkset = build_final_linkset(candidates, sizeacct)
     save_linkset(linkset, destpath)
-    new_dataset, new_ground_truth = build_new_dataset(dataset, linkset, ground_truth)
+    x = build_new_dataset(dataset, linkset, ground_truth, input_typeinfo, min_num)
+    #print('x')
+    new_dataset, new_ground_truth, new_types = x
     save_dataset(new_dataset, newdir)
     save_ground_truth(new_ground_truth, newgrd)
+    save_typeinfo(new_types, output_typeinfo)
 
 if __name__ == '__main__':
     main()

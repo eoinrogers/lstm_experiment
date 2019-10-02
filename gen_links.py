@@ -23,7 +23,7 @@ def get_most_likely(pvect, word2id, lookahead_offset, perplexity):
 
 def print_progress(current, total, size=20): 
     n = round((current / total) * size)
-    sys.stdout.write('|{}{}|\r'.format('#' * n, ' ' * (size-n)))
+    sys.stdout.write('  |{}{}|\r'.format('#' * n, ' ' * (size-n)))
 
 def process_single_lookahead(dataset, window_length, word2id_path, perplexity_path, incoming_path, outgoing_path, lookahead_length, lookahead_offset): 
     output = open(outgoing_path, 'w')
@@ -49,6 +49,7 @@ def get_continue_value(dataset):
         if item.startswith('new_event_'): 
             number = int(item.split('_')[-1])
             if item >= output: output = item + 1
+    print('continue value =', output)
     return output
 
 def load_dataset(path): 

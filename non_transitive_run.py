@@ -20,8 +20,11 @@ def generate_links(testing_data, delta_file_proto, ll_links_file_proto, word2id_
     gen_links.main(args)
 
 # args.dataset, args.linkproto, args.ground, args.destination, args.newdata, args.newground
-def integrate_links(testing_data, ll_links_file_proto, ground_file, final_linkset, new_dataset_dir, new_ground_file): 
-    args = [testing_data, ll_links_file_proto, ground_file, final_linkset, new_dataset_dir, new_ground_file]
+def integrate_links(testing_data, ll_links_file_proto, incoming_types_file, outgoing_types_file, ground_file, final_linkset, new_dataset_dir, new_ground_file, \
+                    min_occur_threshold, sizeacct): 
+    args = [testing_data, ll_links_file_proto, incoming_types_file, outgoing_types_file, ground_file, final_linkset, new_dataset_dir, new_ground_file, \
+            min_occur_threshold, sizeacct]
+    print('fncdsk')
     intlks.main(args)
 
 def mkdir(path): 
@@ -35,42 +38,67 @@ def shuffle_list(l):
         if i not in indices: indices.append(i)
     return [l[i] for i in indices]
 
+# TODO re-write this function.
+# Write out a randomised repeat of the new (output) dataset to realise John's idea for this layer. 
 def expand_new_dataset(incoming_dataset_dir, outgoing_dataset_dir, incoming_ground_file, outgoing_ground_file, n=5): 
+    # This does not work: it should re-extend compressed datasets so we can map them to the original ground truth
+    # Load old ground truth AND the old dataset
     ground = intlks.load_ground_truth(incoming_ground_file)
     dataset = gen_links.load_dataset(incoming_dataset_dir)
     gd_list = [] # (ground_item, [data]), ...
     accum = []
     current = ground[0]
+    
+    # For each item in the dataset, collect the events that are part of the current activity type
+    # Each event-set is placed in a list called gd_list (ground-data list)
     for g, d in zip(ground, dataset): 
+        print(g, d, accum, current)
         if g == current: accum.append(d)
         else: 
             gd_list.append((g, accum))
             current, accum = g, [d]
     if len(accum) > 0: 
         gd_list.append((g, accum))
+    
+    # Re-build the old dataset, but build up the ground dataset (!) 
     new_dataset, new_ground = [], []
     gd_list *= n
     gd_list = shuffle_list(gd_list)
     for g, d in gd_list: 
         new_dataset.extend(d)
         new_ground.extend([g] * len(d))
+    print(len(new_dataset))
+    
+    # Write out the results
     intlks.save_dataset(new_dataset, outgoing_dataset_dir)
     intlks.save_ground_truth(new_ground, outgoing_ground_file)
 
+def copy_dataset(incoming_dataset_dir, outgoing_dataset_dir, incoming_ground_file, outgoing_ground_file): 
+    for fname in 'ptb.train.txt ptb.valid.txt ptb.test.txt'.split(): 
+        subprocess.run(['cp', os.path.join(incoming_dataset_dir, fname), os.path.join(outgoing_dataset_dir, fname)])
+    subprocess.run(['cp', incoming_ground_file, outgoing_ground_file])
+
 def run_for_single_layer(input_training_data_dir, input_testing_data_dir, network_save_path, probability_file_proto, word2id_file_proto, perplexity_file_proto, \
-                         delta_file_proto, ll_links_file_proto, window_length, lookahead_length, output_training_data_dir, output_testing_data_dir, \
-                         input_training_ground_file, output_training_ground_file, output_testing_ground_file, final_linkset): 
-    for i in range(lookahead_length): 
-        network = os.path.join(network_save_path, str(i + 1))
-        mkdir(network)
-        run_network(input_training_data_dir, network, probability_file_proto, word2id_file_proto, input_testing_data_dir, perplexity_file_proto)
+                         delta_file_proto, ll_links_file_proto, incoming_types_file, window_length, lookahead_length, output_training_data_dir, output_testing_data_dir, \
+                         input_training_ground_file, output_training_ground_file, output_testing_ground_file, final_linkset, outgoing_types_file, min_occur_threshold, \
+                         sizeacct): 
+    #for i in range(lookahead_length): 
+    #    network = os.path.join(network_save_path, str(i + 1))
+    #    mkdir(network)
+    #    run_network(input_training_data_dir, network, probability_file_proto, word2id_file_proto, input_testing_data_dir, perplexity_file_proto)
     build_delta_files(probability_file_proto, delta_file_proto)
     generate_links(input_testing_data_dir, delta_file_proto, ll_links_file_proto, word2id_file_proto, perplexity_file_proto, window_length, lookahead_length)
-    integrate_links(input_testing_data_dir, ll_links_file_proto, input_training_ground_file, final_linkset, output_testing_data_dir, output_training_ground_file)
-    expand_new_dataset(output_testing_data_dir, output_training_data_dir, output_training_ground_file, output_testing_ground_file)
+    integrate_links(input_testing_data_dir, ll_links_file_proto, incoming_types_file, outgoing_types_file, input_training_ground_file, final_linkset, output_testing_data_dir, \
+                    output_training_ground_file, min_occur_threshold, sizeacct)
+    copy_dataset(output_testing_data_dir, output_training_data_dir, output_training_ground_file, output_testing_ground_file)
 
-def main(input_training_data_dir, input_testing_data_dir, input_training_ground_file, working_dir, num_layers, window_length, lookahead_length): 
-    for i in range(num_layers): 
+def main(input_training_data_dir, input_testing_data_dir, input_training_ground_file, working_dir, num_layers, window_length, lookahead_length, min_occur_threshold, sizeacct, purge_old=True): 
+    #if purge_old and os.path.isdir(working_dir): 
+    #    subprocess.run('rm -r {}'.format(working_dir).split())
+    #if not os.path.isdir(working_dir): 
+    #    subprocess.run('mkdir {}'.format(working_dir).split())
+    incoming_types_file = 'NULL'
+    for i in range(0, num_layers): 
         i += 1
         full_path = os.path.join(working_dir, 'Layer {}'.format(i))
         mkdir(full_path)
@@ -83,21 +111,22 @@ def main(input_training_data_dir, input_testing_data_dir, input_training_ground_
         perplex_proto = os.path.join(full_path, 'misc/perplexities/offset_{}')
         deltas_proto = os.path.join(full_path, 'deltas/offset_{}')
         ll_proto = os.path.join(full_path, 'misc/ll_links/offset_{}')
+        outgoing_types_file = os.path.join(full_path, 'typeinfo.txt')
         output_training_dir = os.path.join(full_path, 'train')
         output_testing_dir = os.path.join(full_path, 'test')
         output_training_ground_file = os.path.join(full_path, 'train_ground.txt')
         output_testing_ground_file = os.path.join(full_path, 'test_ground.txt')
         linkset_file = os.path.join(full_path, 'linkset.txt')
         run_for_single_layer(input_training_data_dir, input_testing_data_dir, os.path.join(full_path, 'misc/networks'), \
-                             probs_proto, word2ids_proto, perplex_proto, deltas_proto, ll_proto, window_length, lookahead_length, \
+                             probs_proto, word2ids_proto, perplex_proto, deltas_proto, ll_proto, incoming_types_file, window_length, lookahead_length, \
                              output_training_dir, output_testing_dir, input_training_ground_file, output_training_ground_file, \
-                             output_testing_ground_file, linkset_file)
+                             output_testing_ground_file, linkset_file, outgoing_types_file, min_occur_threshold, sizeacct)
         input_training_data_dir = output_training_dir
         input_testing_data_dir = output_testing_dir
         input_training_ground_file = output_training_ground_file
 
 if __name__ == '__main__':
-    #main('/home/eoin/programming/newlstm/experiment_thing/train_data', '/home/eoin/programming/newlstm/experiment_thing/test_data', \
-    #     '/media/eoin/BigDisk/kyoto3/k3_ground_non_interleaved.txt', '/media/eoin/BigDisk/hierarchy', 5, 20, 10)
-    main('/media/eoin/BigDisk/hierarchy/Layer 1/train', '/media/eoin/BigDisk/hierarchy/Layer 1/test', '/media/eoin/BigDisk/hierarchy/Layer 1/test_ground.txt', '/media/eoin/BigDisk/hierarchy', 5, 20, 10)
+    main('/home/eoin/programming/newlstm/experiment_thing/train_data', '/home/eoin/programming/newlstm/experiment_thing/test_data', \
+         '/media/eoin/BigDisk/kyoto3/k3_ground_non_interleaved.txt', '/media/eoin/BigDisk/hierarchy', 5, 20, 10, 3, True)
+    #main('/media/eoin/BigDisk/hierarchy/Layer 1/train', '/media/eoin/BigDisk/hierarchy/Layer 1/test', '/media/eoin/BigDisk/hierarchy/Layer 1/test_ground.txt', '/media/eoin/BigDisk/hierarchy', 5, 20, 10)
 
