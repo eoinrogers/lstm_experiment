@@ -93,25 +93,28 @@ def remove_uncommon_candidate_events(output, type_dict, contval, threshold):
     names = [item[0] for item in temp]
     counts = [item[1] for item in temp]
     cand2new = {}
+    rejections = 0
+    accepts = 0
+    print('before', output.count(None))
     for i in range(len(output)): 
         if type(output[i]) == tuple: 
             original_value, sibling_index, type_value = output[i]
             count = counts[names.index(type_value)]
             if count < threshold: 
+                rejections += 1
                 output[i] = original_value
-            if type_value.startswith('candidate_event_'): 
+            elif type_value.startswith('candidate_event_'): 
                 if type_value in cand2new: type_value = cand2new[type_value]
                 else: 
                     ne = 'new_event_{}'.format(contval)
                     contval += 1
                     cand2new[type_value] = ne
                     type_value = ne
-            output[i] = type_value
-            output[sibling_index] = None #type_value
-    for i in range(len(temp)): 
-        if names[i].startswith('candidate_event'): 
-            names[i] = cand2new[names[i]]
-    type_dict = { temp[i] : (names[i], counts[i]) for i in range(len(temp)) if counts[i] >= threshold }
+                output[i] = type_value
+                output[sibling_index] = None #type_value
+                accepts += 1
+    type_dict = { temp[i] : (names[i], counts[i]) for i in range(len(temp)) if counts[i] >= threshold } 
+    print('Threshold = {}, rejections = {}, accepts = {}'.format(threshold, rejections, accepts))
     return output, type_dict
 
 def build_new_dataset(dataset, linkset, ground_truth, typeinfo, threshold): 
@@ -140,6 +143,7 @@ def build_new_dataset(dataset, linkset, ground_truth, typeinfo, threshold):
             events[contents_one] = (link_type, 1)
             candval += 1
         output[i] = (output[i], j, link_type)
+    print('After compression:', len([item for item in output if item != None]))
     output, new_events = remove_uncommon_candidate_events(output, events, contval, threshold)
     new_ground_truth = [item for item, corresponding_event in zip(ground_truth, output) if corresponding_event != None]
     print('After compression:', len([item for item in output if item != None]))

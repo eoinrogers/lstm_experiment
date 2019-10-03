@@ -98,6 +98,7 @@ flags.DEFINE_string('test', None,
                     'Path to the directory containing the test dataset')
 flags.DEFINE_string('perplex', None, 
                     'Path to the file to store ther LSTM perplexities')
+flags.DEFINE_integer('increase', 0, 'Used to increase training epochs past 20')
 FLAGS = flags.FLAGS
 BASIC = "basic"
 CUDNN = "cudnn"
@@ -480,6 +481,7 @@ def main(_):
     raise ValueError('Must set --perplex to perplexity output file')
   if not FLAGS.save_path: 
     raise ValueError('Must set --save_path to output folder named after lookahead value')
+  increase_by = FLAGS.increase
   lookahead = os.path.split(FLAGS.save_path)[-1]
   try: lookahead = int(lookahead)
   except Exception: raise ValueError('Could not convert lookahead "{}" to an integer'.format(lookahead))
@@ -500,6 +502,7 @@ def main(_):
   test_data = a + b + c
 
   config = get_config()
+  if increase_by > 0: config.max_max_epoch += increase_by
   eval_config = get_config()
   eval_config.batch_size = 1
   eval_config.num_steps = 1

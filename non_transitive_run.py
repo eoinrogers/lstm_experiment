@@ -1,10 +1,10 @@
 import gen_links, integrate_links as intlks, subprocess, random, os
 
-def run_network(training_data, network_save_path, probability_file_proto, word2id_file_proto, testing_data, perplexity_file_proto): 
+def run_network(training_data, network_save_path, probability_file_proto, word2id_file_proto, testing_data, perplexity_file_proto, increase_by): 
     #python3 ptb_word_lm.py --data_path=$K3_TRAIN_ROOT --save_path=$K3_TRAIN_ROOT/$INDEX --probs=$PROBABILITY_FILE --word2id=$WORD2ID_FILE --test=$K3_TEST_ROOT --perplex=$PERPLEXITY_FILE
     args = ['--data_path={}'.format(training_data), '--save_path={}'.format(network_save_path), \
             '--probs={}'.format(probability_file_proto), '--word2id={}'.format(word2id_file_proto), \
-            '--test={}'.format(testing_data), '--perplex={}'.format(perplexity_file_proto)] 
+            '--test={}'.format(testing_data), '--perplex={}'.format(perplexity_file_proto), '--increase={}'.format(increase_by)] 
     full_command = ['python3', 'ptb_word_lm.py'] + args
     subprocess.run(full_command)
 
@@ -38,10 +38,8 @@ def shuffle_list(l):
         if i not in indices: indices.append(i)
     return [l[i] for i in indices]
 
-# TODO re-write this function.
 # Write out a randomised repeat of the new (output) dataset to realise John's idea for this layer. 
 def expand_new_dataset(incoming_dataset_dir, outgoing_dataset_dir, incoming_ground_file, outgoing_ground_file, n=5): 
-    # This does not work: it should re-extend compressed datasets so we can map them to the original ground truth
     # Load old ground truth AND the old dataset
     ground = intlks.load_ground_truth(incoming_ground_file)
     dataset = gen_links.load_dataset(incoming_dataset_dir)
@@ -52,7 +50,7 @@ def expand_new_dataset(incoming_dataset_dir, outgoing_dataset_dir, incoming_grou
     # For each item in the dataset, collect the events that are part of the current activity type
     # Each event-set is placed in a list called gd_list (ground-data list)
     for g, d in zip(ground, dataset): 
-        print(g, d, accum, current)
+        #print(g, d, accum, current)
         if g == current: accum.append(d)
         else: 
             gd_list.append((g, accum))
@@ -81,22 +79,24 @@ def copy_dataset(incoming_dataset_dir, outgoing_dataset_dir, incoming_ground_fil
 def run_for_single_layer(input_training_data_dir, input_testing_data_dir, network_save_path, probability_file_proto, word2id_file_proto, perplexity_file_proto, \
                          delta_file_proto, ll_links_file_proto, incoming_types_file, window_length, lookahead_length, output_training_data_dir, output_testing_data_dir, \
                          input_training_ground_file, output_training_ground_file, output_testing_ground_file, final_linkset, outgoing_types_file, min_occur_threshold, \
-                         sizeacct): 
-    #for i in range(lookahead_length): 
-    #    network = os.path.join(network_save_path, str(i + 1))
-    #    mkdir(network)
-    #    run_network(input_training_data_dir, network, probability_file_proto, word2id_file_proto, input_testing_data_dir, perplexity_file_proto)
+                         sizeacct, increase_by): 
+    increase = 0
+    for i in range(lookahead_length): 
+        network = os.path.join(network_save_path, str(i + 1))
+        mkdir(network)
+        run_network(input_training_data_dir, network, probability_file_proto, word2id_file_proto, input_testing_data_dir, perplexity_file_proto, increase)
+        if increase_by > 0: increase += increase_by 
     build_delta_files(probability_file_proto, delta_file_proto)
     generate_links(input_testing_data_dir, delta_file_proto, ll_links_file_proto, word2id_file_proto, perplexity_file_proto, window_length, lookahead_length)
     integrate_links(input_testing_data_dir, ll_links_file_proto, incoming_types_file, outgoing_types_file, input_training_ground_file, final_linkset, output_testing_data_dir, \
                     output_training_ground_file, min_occur_threshold, sizeacct)
-    copy_dataset(output_testing_data_dir, output_training_data_dir, output_training_ground_file, output_testing_ground_file)
+    expand_new_dataset(output_testing_data_dir, output_training_data_dir, output_training_ground_file, output_testing_ground_file)
 
-def main(input_training_data_dir, input_testing_data_dir, input_training_ground_file, working_dir, num_layers, window_length, lookahead_length, min_occur_threshold, sizeacct, purge_old=True): 
-    #if purge_old and os.path.isdir(working_dir): 
-    #    subprocess.run('rm -r {}'.format(working_dir).split())
-    #if not os.path.isdir(working_dir): 
-    #    subprocess.run('mkdir {}'.format(working_dir).split())
+def main(input_training_data_dir, input_testing_data_dir, input_training_ground_file, working_dir, num_layers, window_length, lookahead_length, min_occur_threshold, sizeacct, increase_by=5, purge_old=True): 
+    if purge_old and os.path.isdir(working_dir): 
+        subprocess.run('rm -r {}'.format(working_dir).split())
+    if not os.path.isdir(working_dir): 
+        subprocess.run('mkdir {}'.format(working_dir).split())
     incoming_types_file = 'NULL'
     for i in range(0, num_layers): 
         i += 1
@@ -120,13 +120,16 @@ def main(input_training_data_dir, input_testing_data_dir, input_training_ground_
         run_for_single_layer(input_training_data_dir, input_testing_data_dir, os.path.join(full_path, 'misc/networks'), \
                              probs_proto, word2ids_proto, perplex_proto, deltas_proto, ll_proto, incoming_types_file, window_length, lookahead_length, \
                              output_training_dir, output_testing_dir, input_training_ground_file, output_training_ground_file, \
-                             output_testing_ground_file, linkset_file, outgoing_types_file, min_occur_threshold, sizeacct)
+                             output_testing_ground_file, linkset_file, outgoing_types_file, min_occur_threshold, sizeacct, increase_by)
         input_training_data_dir = output_training_dir
         input_testing_data_dir = output_testing_dir
         input_training_ground_file = output_training_ground_file
 
 if __name__ == '__main__':
+    import time
+    start_time = time.time()
     main('/home/eoin/programming/newlstm/experiment_thing/train_data', '/home/eoin/programming/newlstm/experiment_thing/test_data', \
-         '/media/eoin/BigDisk/kyoto3/k3_ground_non_interleaved.txt', '/media/eoin/BigDisk/hierarchy', 5, 20, 10, 3, True)
+         '/media/eoin/BigDisk/kyoto3/k3_ground_non_interleaved.txt', '/media/eoin/BigDisk/hierarchy', 5, 20, 10, 10, True)
+    print('Done.\nThis took {} seconds'.format(time.time() - start_time))
     #main('/media/eoin/BigDisk/hierarchy/Layer 1/train', '/media/eoin/BigDisk/hierarchy/Layer 1/test', '/media/eoin/BigDisk/hierarchy/Layer 1/test_ground.txt', '/media/eoin/BigDisk/hierarchy', 5, 20, 10)
 
