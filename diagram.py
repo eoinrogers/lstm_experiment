@@ -31,37 +31,38 @@ class Bitmap:
     def mk_pixels(self): 
         self.__colours = {}
         for colour in list(self.__px.values()) + [self.background]:
-            colour_bytes = b''
+            colour_bytes = []
             colour_list = list(colour)
             colour_list.reverse()
-            for i in colour_list: colour_bytes += struct.pack('<B', i)
+            for i in colour_list: colour_bytes.append(i)
             self.__colours[colour] = colour_bytes
         print(self.__colours)
     def save(self, destination): 
         total_pixels = self.width * self.height
         padding = 0 if ((self.width * 3) % 4) == 0 else 4 - ((self.width * 3) % 4)
         self.mk_pixels()
-        row_data = (self.__colours[self.background] * self.width) + (b'\0' * padding)
-        row_length = len(row_data)
-        pixel_data = row_data * self.height
-        pixel_data_length = len(pixel_data)
+        row_length = (3 * self.width) + padding
+        pixel_data_length = row_length * self.height
         dib_header = struct.pack('<I', self.width) + struct.pack('<I', self.height) + struct.pack('<H', 1) + struct.pack('<H', 24)
         dib_header += struct.pack('<I', 0) + struct.pack('<I', pixel_data_length) + struct.pack('<I', 2835) + struct.pack('<I', 2835)
         dib_header += struct.pack('<I', 0) + struct.pack('<I', 0)
         dib_length = len(dib_header) + 4
+        dib_header = struct.pack('<I', dib_length) + dib_header
         bmp_header = b'BM' + struct.pack('<I', 14 + pixel_data_length + dib_length)
         bmp_header += struct.pack('<H', 0) + struct.pack('<H', 0)
         bmp_header += struct.pack('<I', 14 + dib_length)
         bitmap = bmp_header + dib_header
-        offset = len(bitmap)
-        for pixel in self.__px: 
-            row, col = pixel
-            print(pixel)
-            colour = self.__colours[self.__px[pixel]]
-            row = self.height - 1 - row
-            i = (row_length * row) + (3 * col)
-            i += offset
-            bitmap = bitmap[:i] + colour + bitmap[i+3:]
+        pixels = []
+        background = self.__colours[self.background]
+        for row in range(self.height): 
+            print(row / self.height, self.height * self.width)
+            for col in range(self.width):
+                corrected_row = self.height - 1 - row
+                if (col, corrected_row) in self.__px: colour = self.__colours[self.__px[(col, corrected_row)]]
+                else: colour = background
+                pixels.extend(colour)
+            if padding > 0: pixels.extend([0] * padding)
+        bitmap = bitmap + bytes(pixels)
         output = open(destination, 'wb')
         output.write(bitmap)
         output.close()
@@ -94,8 +95,13 @@ class Bitmap:
     return bmp'''
 
 def set_pixel(bmp, pixel, colour, background=None, increment=None): 
-    if background == None or increment == None or bmp.get_pixel(*pixel) == background: increment = 0
-    bmp.set_pixel(pixel[0], pixel[1], colour)
+    if background == None or increment == None or bmp.get_pixel(*pixel) == background: 
+        bmp.set_pixel(pixel[0], pixel[1], colour)
+    else: 
+        colour = bmp.get_pixel(*pixel)
+        rounder = lambda x, increment: min(x, 255) if increment > 0 else max(x, 0)
+        colour = tuple([rounder(item + increment, increment) for item in colour])
+        bmp.set_pixel(pixel[0], pixel[1], colour)
     return bmp
 
 '''def set_block(bmp, block_top_left, block_bottom_right, colour): 
@@ -215,9 +221,9 @@ def draw_triangles_for_single_link_layer(bmp, top, bottom, width_per_event, type
     return bmp
 
 def draw_layer_internal(bmp, bottom, event_height, event_width, triangle_height, ground_colour, triangle_colour, background, increment, ground, types): 
-    bmp = draw_ground(bmp, event_height, event_width, bottom - (event_height * len(types[0])), ground_colour, ground)
+    bmp = draw_ground(bmp, event_height, event_width, bottom - (event_height * len(ground[0])), ground_colour, ground)
     print('Ground done')
-    bottom -= (event_height * (len(ground[0]) + 1))
+    bottom -= (event_height * len(ground[0]))
     bmp = draw_triangles_for_single_link_layer(bmp, bottom - triangle_height, bottom, event_width, types, triangle_colour, background, increment)
     return bmp, bottom - triangle_height
 
@@ -281,11 +287,13 @@ def make_diagram(initial_ground_file, ground_file_proto, types_file_proto, backg
         n += 1
         current_types = types_file_proto.format(n)
         if not (os.path.exists(current_ground) and os.path.exists(current_types)): current_types = None
-        output.save(final_destination);exit()
+        output.save(final_destination)  
+        if ground_colour == (255, 0, 0): ground_colour = (0, 0, 255)
+        else: ground_colour = (255, 0, 0)
     output.save(final_destination)
 
 if __name__ == '__main__': 
-    make_diagram('/media/eoin/BigDisk/kyoto3/k3_ground_non_interleaved.txt', '/media/eoin/BigDisk/hierarchy/Layer {}/test_ground.txt', '/media/eoin/BigDisk/hierarchy/Layer {}/typeinfo.txt', \
+    make_diagram('/media/eoin/BigDisk/kyoto3/k3_ground_non_interleaved.txt', '/media/eoin/BigDisk/hierarchy/Layer {}/train_ground.txt', '/media/eoin/BigDisk/hierarchy/Layer {}/typeinfo.txt', \
                  (255, 255, 255), (255, 0, 0), (200, 100, 100), 10, 10, 30, -10, 'lstm.bmp')
 
-
+    

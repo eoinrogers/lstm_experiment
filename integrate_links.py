@@ -145,11 +145,9 @@ def build_new_dataset(dataset, linkset, ground_truth, typeinfo, threshold):
             events[contents_one] = (link_type, 1)
             candval += 1
         output[i] = (output[i], j, link_type)
-    print('After compression:', len([item for item in output if item != None]))
     output, new_events = remove_uncommon_candidate_events(output, events, contval, threshold)
     new_ground_truth = [item for item, corresponding_event in zip(ground_truth, output) if corresponding_event != None]
-    print(new_events)
-    print('After compression:', len([item for item in output if item != None]))
+    print('After compression:', len([item for item in output if item != None]), len(new_ground_truth))
     return ([item for item in output if item != None], new_ground_truth, new_events)
 
 def save_dataset(dataset, path, train_pc=.6, test_pc=.2, valid_pc=.2): 

@@ -77,6 +77,7 @@ def main(args=None):
         outgoing = o.format(n)
         word2id = w2i.format(n)
         perplexity = perp.format(n)
+    print()
 
 if __name__ == '__main__':
     main()
