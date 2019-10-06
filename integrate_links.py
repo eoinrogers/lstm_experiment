@@ -20,7 +20,7 @@ def load_ground_truth(path):
     for line in handler: 
         line = line.strip()
     handler.close()
-    line = [item.index('1') for item in line.split()]
+    line = [[int(i) for i in range(len(item)) if item[i] == '1'] for item in line.split()]
     return line
 
 def load_typeinfo(path): 
@@ -104,16 +104,18 @@ def remove_uncommon_candidate_events(output, type_dict, contval, threshold):
                 rejections += 1
                 output[i] = original_value
             elif type_value.startswith('candidate_event_'): 
-                if type_value in cand2new: type_value = cand2new[type_value]
+                if type_value in cand2new: 
+                    cand2new[type_value][1].append((i, sibling_index))
+                    type_value = cand2new[type_value][0]
                 else: 
                     ne = 'new_event_{}'.format(contval)
                     contval += 1
-                    cand2new[type_value] = ne
+                    cand2new[type_value] = ne, [(i, sibling_index)]
                     type_value = ne
                 output[i] = type_value
                 output[sibling_index] = None #type_value
                 accepts += 1
-    type_dict = { temp[i] : (names[i], counts[i]) for i in range(len(temp)) if counts[i] >= threshold } 
+    type_dict = { cand2new[temp[i][0]][0] : (names[i], counts[i], cand2new[temp[i][0]][1]) for i in range(len(temp)) if counts[i] >= threshold } 
     print('Threshold = {}, rejections = {}, accepts = {}'.format(threshold, rejections, accepts))
     return output, type_dict
 
@@ -146,6 +148,7 @@ def build_new_dataset(dataset, linkset, ground_truth, typeinfo, threshold):
     print('After compression:', len([item for item in output if item != None]))
     output, new_events = remove_uncommon_candidate_events(output, events, contval, threshold)
     new_ground_truth = [item for item, corresponding_event in zip(ground_truth, output) if corresponding_event != None]
+    print(new_events)
     print('After compression:', len([item for item in output if item != None]))
     return ([item for item in output if item != None], new_ground_truth, new_events)
 
@@ -164,8 +167,8 @@ def save_dataset(dataset, path, train_pc=.6, test_pc=.2, valid_pc=.2):
         handler.close()
 
 def save_ground_truth(ground_truth, destination): 
-    mkgrdstr = lambda item, length: ''.join(['1' if i == item else '0' for i in range(length)])
-    length = max(ground_truth) + 1
+    mkgrdstr = lambda item, length: ''.join(['1' if i in item else '0' for i in range(length)])
+    length = max([max(i) for i in ground_truth]) + 1
     handler = open(destination, 'w')
     guide = ''.join(['{} '.format(i) for i in range(length)])[:-1]
     handler.write('{}\n'.format(guide))
@@ -176,8 +179,8 @@ def save_ground_truth(ground_truth, destination):
 
 def save_typeinfo(type_dict, destination): 
     handler = open(destination, 'w')
-    for t in type_dict: 
-        handler.write('{} {} {}\n'.format(t, type_dict[t][0], type_dict[t][1]))
+    for t in type_dict:
+        handler.write('{} {} {} {}\n'.format(t, type_dict[t][0], type_dict[t][1], type_dict[t][2]))
     handler.close()
 
 def main(args=None): 
