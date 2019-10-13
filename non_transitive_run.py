@@ -81,22 +81,22 @@ def run_for_single_layer(input_training_data_dir, input_testing_data_dir, networ
                          input_training_ground_file, output_training_ground_file, output_testing_ground_file, final_linkset, outgoing_types_file, min_occur_threshold, \
                          sizeacct, increase_by): 
     increase = 0
-    for i in range(lookahead_length): 
-        network = os.path.join(network_save_path, str(i + 1))
-        mkdir(network)
-        run_network(input_training_data_dir, network, probability_file_proto, word2id_file_proto, input_testing_data_dir, perplexity_file_proto, increase)
-        if increase_by > 0: increase += increase_by 
-    build_delta_files(probability_file_proto, delta_file_proto)
+    #for i in range(lookahead_length): 
+    #    network = os.path.join(network_save_path, str(i + 1))
+    #    mkdir(network)
+    #    run_network(input_training_data_dir, network, probability_file_proto, word2id_file_proto, input_testing_data_dir, perplexity_file_proto, increase)
+    #    if increase_by > 0: increase += increase_by 
+    #build_delta_files(probability_file_proto, delta_file_proto)
     generate_links(input_testing_data_dir, delta_file_proto, ll_links_file_proto, word2id_file_proto, perplexity_file_proto, window_length, lookahead_length)
     integrate_links(input_testing_data_dir, ll_links_file_proto, incoming_types_file, outgoing_types_file, input_training_ground_file, final_linkset, output_testing_data_dir, \
                     output_training_ground_file, min_occur_threshold, sizeacct)
     expand_new_dataset(output_testing_data_dir, output_training_data_dir, output_training_ground_file, output_testing_ground_file)
 
-def main(input_training_data_dir, input_testing_data_dir, input_training_ground_file, working_dir, num_layers, window_length, lookahead_length, min_occur_threshold, sizeacct, increase_by=5, purge_old=True): 
-    if purge_old and os.path.isdir(working_dir): 
-        subprocess.run('rm -r {}'.format(working_dir).split())
-    if not os.path.isdir(working_dir): 
-        subprocess.run('mkdir {}'.format(working_dir).split())
+def main(input_training_data_dir, input_testing_data_dir, input_training_ground_file, working_dir, num_layers, window_length, lookahead_length, min_occur_threshold, sizeacct, increase_by=1, purge_old=True): 
+    #if purge_old and os.path.isdir(working_dir): 
+    #    subprocess.run('rm -r {}'.format(working_dir).split())
+    #if not os.path.isdir(working_dir): 
+    #    subprocess.run('mkdir {}'.format(working_dir).split())
     incoming_types_file = 'NULL'
     for i in range(0, num_layers): 
         i += 1

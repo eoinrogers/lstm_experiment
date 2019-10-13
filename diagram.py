@@ -220,10 +220,11 @@ def draw_triangles_for_single_link_layer(bmp, top, bottom, width_per_event, type
         bmp = draw_four_corners(bmp, tl, tr, bl, br, background, c, increment)
     return bmp
 
-def draw_layer_internal(bmp, bottom, event_height, event_width, triangle_height, ground_colour, triangle_colour, background, increment, ground, types): 
-    bmp = draw_ground(bmp, event_height, event_width, bottom - (event_height * len(ground[0])), ground_colour, ground)
-    print('Ground done')
-    bottom -= (event_height * len(ground[0]))
+def draw_layer_internal(bmp, bottom, event_height, event_width, triangle_height, ground_colour, triangle_colour, background, increment, ground, types, skip_ground=False): 
+    if not skip_ground: 
+        bmp = draw_ground(bmp, event_height, event_width, bottom - (event_height * len(ground[0])), ground_colour, ground)
+        print('Ground done')
+        bottom -= (event_height * len(ground[0]))
     bmp = draw_triangles_for_single_link_layer(bmp, bottom - triangle_height, bottom, event_width, types, triangle_colour, background, increment)
     return bmp, bottom - triangle_height
 
@@ -258,14 +259,14 @@ def parse_row(string):
     row = list(row[:3]) + [parse_py_list(row[3].strip())]
     return row
 
-def draw_layer(bmp, bottom, event_height, event_width, triangle_height, ground_colour, triangle_colour, background, increment, ground_file, type_file): 
+def draw_layer(bmp, bottom, event_height, event_width, triangle_height, ground_colour, triangle_colour, background, increment, ground_file, type_file, skip_ground=False): 
     f = open(ground_file, 'r')
     ground = f.readlines()[-1].strip().split()
     f.close()
     f = open(type_file, 'r')
     types = [parse_row(item.strip()) for item in f.readlines()]
     f.close()
-    return draw_layer_internal(bmp, bottom, event_height, event_width, triangle_height, ground_colour, triangle_colour, background, increment, ground, types)
+    return draw_layer_internal(bmp, bottom, event_height, event_width, triangle_height, ground_colour, triangle_colour, background, increment, ground, types, skip_ground)
 
 def make_diagram(initial_ground_file, ground_file_proto, types_file_proto, background, ground_colour, triangle_colour, event_height, event_width, triangle_height, increment, final_destination): 
     largest_layer = 1
@@ -282,7 +283,7 @@ def make_diagram(initial_ground_file, ground_file_proto, types_file_proto, backg
     bottom = height - 1
     while current_types != None: 
         print(n, bottom)
-        output, bottom = draw_layer(output, bottom, event_height, event_width, triangle_height, ground_colour, triangle_colour, background, increment, current_ground, current_types)
+        output, bottom = draw_layer(output, bottom, event_height, event_width, triangle_height, ground_colour, triangle_colour, background, increment, current_ground, current_types, n > 1)
         current_ground = ground_file_proto.format(n)
         n += 1
         current_types = types_file_proto.format(n)
