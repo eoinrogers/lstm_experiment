@@ -99,6 +99,7 @@ flags.DEFINE_string('test', None,
 flags.DEFINE_string('perplex', None, 
                     'Path to the file to store ther LSTM perplexities')
 flags.DEFINE_integer('increase', 0, 'Used to increase training epochs past 20')
+flags.DEFINE_float('lmult', 1, 'Used to increase the size of hidden layers')
 FLAGS = flags.FLAGS
 BASIC = "basic"
 CUDNN = "cudnn"
@@ -502,10 +503,18 @@ def main(_):
   test_data = a + b + c
 
   config = get_config()
-  if increase_by > 0: config.max_max_epoch += increase_by
   eval_config = get_config()
   eval_config.batch_size = 1
   eval_config.num_steps = 1
+  if increase_by > 0: 
+        config.max_max_epoch += (increase_by - 1)
+  if FLAGS.lmult > 1: 
+        config.hidden_size *= FLAGS.lmult
+        eval_config.hidden_size *= FLAGS.lmult
+        config.hidden_size = round(config.hidden_size)
+        eval_config.hidden_size = round(eval_config.hidden_size)
+        config.max_epoch *= FLAGS.lmult
+        config.max_epoch = round(config.max_epoch)
 
   with tf.Graph().as_default():
     initializer = tf.random_uniform_initializer(-config.init_scale,

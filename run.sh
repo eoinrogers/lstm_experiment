@@ -6,10 +6,11 @@ K3_TRAIN_ROOT=train_data
 K3_TEST_ROOT=test_data
 LOOKAHEAD_LEN=10
 # You probably won't want to change the parameters below here
-DELTAS_FILE=/media/eoin/BigDisk/ndeltas/lstm_deltas_offset_{}
-PROBABILITY_FILE=outputs/probabilities/lstm_probabilities_offset_{}
-WORD2ID_FILE=outputs/word2ids/lstm_word2id_offset_{}
-PERPLEXITY_FILE=outputs/perplexity/lstm_perplexity_{}
+DELTAS_FILE=/media/eoin/BigDisk/hierarchy/Layer\ 1/deltas/offset_{}
+PROBABILITY_FILE=/media/eoin/BigDisk/hierarchy/Layer\ 1/misc/probabilities/offset_{}
+#outputs/probabilities/lstm_probabilities_offset_{}
+WORD2ID_FILE=/media/eoin/BigDisk/hierarchy/Layer\ 1/misc/word2ids/offset_{}
+PERPLEXITY_FILE=/media/eoin/BigDisk/hierarchy/Layer 1/misc/perplexities/offset_{}
 LINKSET=outputs/lstm_linkset.txt
 CLUSTER_FILE=outputs/clusters.txt
 RAW_OUTPUT=outputs/raw_output.txt
