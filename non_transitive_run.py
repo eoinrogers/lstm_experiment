@@ -54,7 +54,7 @@ def expand_new_dataset(incoming_dataset_dir, outgoing_dataset_dir, incoming_grou
         #print(g, d, accum, current)
         if g == current: accum.append(d)
         else: 
-            gd_list.append((g, accum))
+            gd_list.append((current, accum))
             current, accum = g, [d]
     if len(accum) > 0: 
         gd_list.append((g, accum))
@@ -98,7 +98,8 @@ def run_for_single_layer(input_training_data_dir, input_testing_data_dir, networ
                     output_testing_ground_file, min_occur_threshold, sizeacct)
     expand_new_dataset(output_testing_data_dir, output_training_data_dir, output_testing_ground_file, output_training_ground_file, copy_dataset)
 
-def main(input_training_data_dir, input_testing_data_dir, input_training_ground_file, working_dir, num_layers, window_length, lookahead_length, min_occur_threshold, sizeacct, layer_increase=1.3333, increase_by=1, lr_degrade_pt=.6, purge_old=True, copy_dataset=5): 
+def main(input_training_data_dir, input_testing_data_dir, input_training_ground_file, working_dir, num_layers, window_length, lookahead_length, min_occur_threshold, sizeacct, \
+         layer_increase=1.2, increase_by=1, lr_degrade_pt=.6, lr_degrade_inc=.1, purge_old=True, copy_dataset=5): 
     if purge_old and os.path.isdir(working_dir): 
         subprocess.run('rm -r {}'.format(working_dir).split())
     if not os.path.isdir(working_dir): 
@@ -111,6 +112,8 @@ def main(input_training_data_dir, input_testing_data_dir, input_training_ground_
         i += 1
         cd = copy_dataset + (i * 3) 
         full_path = os.path.join(working_dir, 'Layer {}'.format(i))
+        if os.path.exists(full_path) and not abort: 
+            os.remove(full_path) 
         mkdir(full_path)
         for j in 'deltas misc test train'.split(): 
             mkdir(os.path.join(full_path, j))
@@ -137,12 +140,13 @@ def main(input_training_data_dir, input_testing_data_dir, input_training_ground_
         input_training_ground_file = output_training_ground_file
         incoming_types_file = outgoing_types_file
         lm *= layer_increase
+        lr_degrade_pt = min(1, lr_degrade_pt + lr_degrade_inc)
 
 if __name__ == '__main__':
     import time
     start_time = time.time()
     main('/home/eoin/programming/newlstm/experiment_thing/train_data', '/home/eoin/programming/newlstm/experiment_thing/test_data', \
-         '/media/eoin/BigDisk/kyoto3/k3_ground_non_interleaved.txt', '/media/eoin/BigDisk/hierarchy', 3, 20, 10, 3, True, purge_old=False)
+         '/media/eoin/BigDisk/kyoto3/k3_ground_non_interleaved.txt', '/media/eoin/BigDisk/hierarchy', 2, 20, 10, 3, True, purge_old=False)
     print('Done.\nThis took {} seconds'.format(time.time() - start_time))
     #main('/media/eoin/BigDisk/hierarchy/Layer 1/train', '/media/eoin/BigDisk/hierarchy/Layer 1/test', '/media/eoin/BigDisk/hierarchy/Layer 1/test_ground.txt', '/media/eoin/BigDisk/hierarchy', 5, 20, 10)
 

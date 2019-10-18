@@ -150,14 +150,13 @@ def build_new_dataset(dataset, linkset, ground_truth, typeinfo, threshold):
     print('After compression:', len([item for item in output if item != None]), len(new_ground_truth))
     return ([item for item in output if item != None], new_ground_truth, new_events)
 
-def save_dataset(dataset, path, train_pc=.6, test_pc=.2, valid_pc=.2): 
+def save_dataset(dataset, path, train_pc=.7, test_pc=.2, valid_pc=.1): 
     i = round(len(dataset) * train_pc)
     j = round(len(dataset) * test_pc)
-    assert(train_pc + test_pc + valid_pc == 1)
     train_string = ''.join(['{} '.format(item) for item in dataset[:i]])[:-1]
     test_string = ''.join(['{} '.format(item) for item in dataset[i:i+j]])[:-1]
     valid_string = ''.join(['{} '.format(item) for item in dataset[-j:]])[:-1]
-    strings = [train_string, test_string, valid_string]
+    strings = [train_string, valid_string, test_string]
     for i in range(3): 
         full_path = os.path.join(path, gen_links.file_names[i])
         handler = open(full_path, 'w')

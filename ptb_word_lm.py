@@ -514,6 +514,7 @@ def main(_):
         eval_config.hidden_size *= FLAGS.lmult
         config.hidden_size = round(config.hidden_size)
         eval_config.hidden_size = round(eval_config.hidden_size)
+        config.max_max_epoch += 5
   if FLAGS.lr_degr < 1: 
         config.max_epoch = round(config.max_max_epoch * FLAGS.lr_degr)
   print('Hidden size = {}\nLearning rate degredation threshold = {}\nEpochs = {}'.format(config.hidden_size, config.max_epoch, config.max_max_epoch))

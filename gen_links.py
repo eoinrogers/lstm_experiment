@@ -1,6 +1,7 @@
 import argparse, reader, os, sys
 
 file_names = 'ptb.train.txt ptb.valid.txt ptb.test.txt'.split()
+threshold = .8
 
 def getargs():
     parser = argparse.ArgumentParser('Build low-level (untyped) links between up to two events')
@@ -24,6 +25,27 @@ def get_most_likely(pvect, word2id, lookahead_offset, perplexity):
 def print_progress(current, total, size=20): 
     n = round((current / total) * size)
     sys.stdout.write('  |{}{}|\r'.format('#' * n, ' ' * (size-n)))
+
+def process_single_lookahead_by_thresholding(dataset, window_length, word2id_path, perplexity_path, incoming_path, outgoing_path, lookahead_length, lookahead_offset): 
+    global threshold
+    print(len(dataset), dataset[:20])
+    output = open(outgoing_path, 'w')
+    word2id_dict = reader.readin_word2id(word2id_path)
+    word2id = [None for item in range(len(word2id_dict))]
+    f = open(perplexity_path, 'r')
+    perplexity = 1 / float(f.read().strip())
+    f.close()
+    for item in word2id_dict: word2id[word2id_dict[item]] = item
+    for i, line in enumerate(open(incoming_path, 'r')): 
+        print_progress(i, len(dataset))
+        line = [float(i.strip()) for i in line.split(',')]
+        #print(i, len(line), line[:3], max(line))
+        above_threshold = [word2id[index] for index, item in enumerate(line) if item >= threshold]
+        lookahead = dataset[i+1:i+1+lookahead_length]
+        j = i + lookahead_offset
+        if j >= len(dataset) or dataset[j] not in above_threshold: continue
+        output.write('{} {} {}\n'.format(i, j, line[word2id.index(dataset[j])]))
+    output.close()
 
 def process_single_lookahead(dataset, window_length, word2id_path, perplexity_path, incoming_path, outgoing_path, lookahead_length, lookahead_offset): 
     output = open(outgoing_path, 'w')
@@ -71,7 +93,7 @@ def main(args=None):
     dataset = load_dataset(d)
     while os.path.exists(incoming): 
         print(incoming)
-        process_single_lookahead(dataset, wl, word2id, perplexity, incoming, outgoing, ll, n)
+        process_single_lookahead_by_thresholding(dataset, wl, word2id, perplexity, incoming, outgoing, ll, n)
         n += 1
         incoming = i.format(n)
         outgoing = o.format(n)
