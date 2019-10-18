@@ -100,6 +100,7 @@ flags.DEFINE_string('perplex', None,
                     'Path to the file to store ther LSTM perplexities')
 flags.DEFINE_integer('increase', 0, 'Used to increase training epochs past 20')
 flags.DEFINE_float('lmult', 1, 'Used to increase the size of hidden layers')
+flags.DEFINE_float('lr_degr', 1, 'Used to degrade the learning rate at the appropriate time')
 FLAGS = flags.FLAGS
 BASIC = "basic"
 CUDNN = "cudnn"
@@ -342,7 +343,7 @@ class SmallConfig(object):
   num_layers = 2
   num_steps = 20
   hidden_size = 150
-  max_epoch = 4
+  max_epoch = 6
   max_max_epoch = 20
   keep_prob = 1.0
   lr_decay = 0.99
@@ -507,14 +508,15 @@ def main(_):
   eval_config.batch_size = 1
   eval_config.num_steps = 1
   if increase_by > 0: 
-        config.max_max_epoch += (increase_by - 1)
+        config.max_max_epoch += increase_by
   if FLAGS.lmult > 1: 
         config.hidden_size *= FLAGS.lmult
         eval_config.hidden_size *= FLAGS.lmult
         config.hidden_size = round(config.hidden_size)
         eval_config.hidden_size = round(eval_config.hidden_size)
-        config.max_epoch *= FLAGS.lmult
-        config.max_epoch = round(config.max_epoch)
+  if FLAGS.lr_degr < 1: 
+        config.max_epoch = round(config.max_max_epoch * FLAGS.lr_degr)
+  print('Hidden size = {}\nLearning rate degredation threshold = {}\nEpochs = {}'.format(config.hidden_size, config.max_epoch, config.max_max_epoch))
 
   with tf.Graph().as_default():
     initializer = tf.random_uniform_initializer(-config.init_scale,
