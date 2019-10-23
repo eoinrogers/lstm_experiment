@@ -1,4 +1,4 @@
-import gen_links, integrate_links as intlks, subprocess, random, os
+import gen_links, integrate_links as intlks, subprocess, random, os, shutil
 
 def run_network(training_data, network_save_path, probability_file_proto, word2id_file_proto, testing_data, perplexity_file_proto, increase_by, layer_mult, lr_degrade_pt): 
     #python3 ptb_word_lm.py --data_path=$K3_TRAIN_ROOT --save_path=$K3_TRAIN_ROOT/$INDEX --probs=$PROBABILITY_FILE --word2id=$WORD2ID_FILE --test=$K3_TEST_ROOT --perplex=$PERPLEXITY_FILE
@@ -99,8 +99,13 @@ def run_for_single_layer(input_training_data_dir, input_testing_data_dir, networ
     expand_new_dataset(output_testing_data_dir, output_training_data_dir, output_testing_ground_file, output_training_ground_file, copy_dataset)
 
 def main(input_training_data_dir, input_testing_data_dir, input_training_ground_file, working_dir, num_layers, window_length, lookahead_length, min_occur_threshold, sizeacct, \
-         layer_increase=1.2, increase_by=1, lr_degrade_pt=.6, lr_degrade_inc=.1, purge_old=True, copy_dataset=5): 
+         layer_increase=1.2, increase_by=0, lr_degrade_pt=.7, lr_degrade_inc=0, purge_old=True, copy_dataset=5): 
     if purge_old and os.path.isdir(working_dir): 
+        confirm = input('Are you sure you want to do remove the old files? (Y/n): ')
+        while confirm.lower() not in 'yn': confirm = input('Please type Y for yes or N for no: ')
+        if confirm.lower() != 'y': 
+            print('Exiting')
+            exit()
         subprocess.run('rm -r {}'.format(working_dir).split())
     if not os.path.isdir(working_dir): 
         subprocess.run('mkdir {}'.format(working_dir).split())
@@ -113,7 +118,7 @@ def main(input_training_data_dir, input_testing_data_dir, input_training_ground_
         cd = copy_dataset + (i * 3) 
         full_path = os.path.join(working_dir, 'Layer {}'.format(i))
         if os.path.exists(full_path) and not abort: 
-            os.remove(full_path) 
+            shutil.rmtree(full_path) 
         mkdir(full_path)
         for j in 'deltas misc test train'.split(): 
             mkdir(os.path.join(full_path, j))
@@ -146,7 +151,7 @@ if __name__ == '__main__':
     import time
     start_time = time.time()
     main('/home/eoin/programming/newlstm/experiment_thing/train_data', '/home/eoin/programming/newlstm/experiment_thing/test_data', \
-         '/media/eoin/BigDisk/kyoto3/k3_ground_non_interleaved.txt', '/media/eoin/BigDisk/hierarchy', 2, 20, 10, 3, True, purge_old=False)
+         '/media/eoin/BigDisk/kyoto3/k3_ground_non_interleaved.txt', '/media/eoin/BigDisk/hierarchy', 4, 20, 10, 3, True, purge_old=False)
     print('Done.\nThis took {} seconds'.format(time.time() - start_time))
     #main('/media/eoin/BigDisk/hierarchy/Layer 1/train', '/media/eoin/BigDisk/hierarchy/Layer 1/test', '/media/eoin/BigDisk/hierarchy/Layer 1/test_ground.txt', '/media/eoin/BigDisk/hierarchy', 5, 20, 10)
 

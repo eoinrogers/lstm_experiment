@@ -26,8 +26,8 @@ import os, reader
 
 
 def pre_load_everything(shell_script, probabilities, word2id, test_directory): 
-    probs_files = '/media/eoin/BigDisk/hierarchy/Layer 2/misc/probabilities/offset_{}'
-    word2id_files = '/media/eoin/BigDisk/hierarchy/Layer 2/misc/word2ids/offset_{}'
+    probs_files = '/media/eoin/BigDisk/hierarchy/Layer 4/misc/probabilities/offset_{}'
+    word2id_files = '/media/eoin/BigDisk/hierarchy/Layer 4/misc/word2ids/offset_{}'
     test_data = [os.path.join(test_directory, item) for item in 'ptb.train.txt ptb.valid.txt ptb.test.txt'.split()]
     data = []
     for item in test_data: 
@@ -72,7 +72,7 @@ def eval_single_offset(probs_file, word2ids_file, data, lookahead_offset, n):
     return (score / i) * 100
 
 if __name__ == '__main__':
-    probs_files, words2id_files, data = pre_load_everything('run.sh', 'PROBABILITY_FILE', 'WORD2ID_FILE', '/media/eoin/BigDisk/hierarchy/Layer 1/test')
+    probs_files, words2id_files, data = pre_load_everything('run.sh', 'PROBABILITY_FILE', 'WORD2ID_FILE', '//media/eoin/BigDisk/hierarchy/Layer 3/test')
     offset = 1
     while os.path.exists(probs_files.format(offset)): 
         print('Offset: {}, Accuracy: {:.2f}%'.format(offset, eval_single_offset(probs_files, words2id_files, data, offset, 3)))
