@@ -155,7 +155,7 @@ def save_dataset(dataset, path, train_pc=.7, test_pc=.2, valid_pc=.1):
     j = round(len(dataset) * test_pc)
     train_string = ''.join(['{} '.format(item) for item in dataset[:i]])[:-1]
     test_string = ''.join(['{} '.format(item) for item in dataset[i:i+j]])[:-1]
-    valid_string = ''.join(['{} '.format(item) for item in dataset[-j:]])[:-1]
+    valid_string = ''.join(['{} '.format(item) for item in dataset[i+j:]])[:-1]
     strings = [train_string, valid_string, test_string]
     for i in range(3): 
         full_path = os.path.join(path, gen_links.file_names[i])

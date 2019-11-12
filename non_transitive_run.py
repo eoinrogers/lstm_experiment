@@ -87,22 +87,24 @@ def run_for_single_layer(input_training_data_dir, input_testing_data_dir, networ
                          input_training_ground_file, output_training_ground_file, output_testing_ground_file, final_linkset, outgoing_types_file, min_occur_threshold, \
                          sizeacct, increase_by, copy_dataset, layer_mult, lr_degrade_pt): 
     increase = 0
-    for i in range(lookahead_length): 
-        network = os.path.join(network_save_path, str(i + 1))
-        mkdir(network)
-        run_network(input_training_data_dir, network, probability_file_proto, word2id_file_proto, input_testing_data_dir, perplexity_file_proto, increase, layer_mult, lr_degrade_pt)
-        if increase_by > 0: increase += increase_by 
-    build_delta_files(probability_file_proto, delta_file_proto)
+    #for i in range(lookahead_length): 
+    #    network = os.path.join(network_save_path, str(i + 1))
+    #    mkdir(network)
+    #    run_network(input_training_data_dir, network, probability_file_proto, word2id_file_proto, input_testing_data_dir, perplexity_file_proto, increase, layer_mult, lr_degrade_pt)
+    #    if increase_by > 0: increase += increase_by 
+    #build_delta_files(probability_file_proto, delta_file_proto)
     generate_links(input_testing_data_dir, delta_file_proto, ll_links_file_proto, word2id_file_proto, perplexity_file_proto, window_length, lookahead_length)
     integrate_links(input_testing_data_dir, ll_links_file_proto, incoming_types_file, outgoing_types_file, input_training_ground_file, final_linkset, output_testing_data_dir, \
                     output_testing_ground_file, min_occur_threshold, sizeacct)
     expand_new_dataset(output_testing_data_dir, output_training_data_dir, output_testing_ground_file, output_training_ground_file, copy_dataset)
 
 def main(input_training_data_dir, input_testing_data_dir, input_training_ground_file, working_dir, num_layers, window_length, lookahead_length, min_occur_threshold, sizeacct, \
-         layer_increase=1.2, increase_by=0, lr_degrade_pt=.7, lr_degrade_inc=0, purge_old=True, copy_dataset=5): 
+         layer_increase=1.2, increase_by=0, lr_degrade_pt=.7, lr_degrade_inc=0, purge_old=True, copy_dataset=5, ask_before_deleting=True): 
     if purge_old and os.path.isdir(working_dir): 
-        confirm = input('Are you sure you want to do remove the old files? (Y/n): ')
-        while confirm.lower() not in 'yn': confirm = input('Please type Y for yes or N for no: ')
+        if ask_before_deleting: 
+            confirm = input('Are you sure you want to remove the old files? (Y/n): ')
+            while confirm.lower() not in 'yn': confirm = input('Please type Y for yes or N for no: ')
+        else: confirm = 'y'
         if confirm.lower() != 'y': 
             print('Exiting')
             exit()
@@ -113,17 +115,18 @@ def main(input_training_data_dir, input_testing_data_dir, input_training_ground_
     incoming_types_file = 'NULL'
     lm = 1
     for i in range(0, num_layers): 
-        abort = i < 1
+        abort = i < 0
         i += 1
         cd = copy_dataset + (i * 3) 
         full_path = os.path.join(working_dir, 'Layer {}'.format(i))
-        if os.path.exists(full_path) and not abort: 
-            shutil.rmtree(full_path) 
-        mkdir(full_path)
-        for j in 'deltas misc test train'.split(): 
-            mkdir(os.path.join(full_path, j))
-        for j in 'll_links networks perplexities probabilities word2ids'.split(): 
-            mkdir(os.path.join(full_path, os.path.join('misc', j)))
+        if purge_old: 
+            if os.path.exists(full_path) and not abort: 
+                shutil.rmtree(full_path) 
+            mkdir(full_path)
+            for j in 'deltas misc test train'.split(): 
+                mkdir(os.path.join(full_path, j))
+            for j in 'll_links networks perplexities probabilities word2ids'.split(): 
+                mkdir(os.path.join(full_path, os.path.join('misc', j)))
         probs_proto = os.path.join(full_path, 'misc/probabilities/offset_{}')
         word2ids_proto = os.path.join(full_path, 'misc/word2ids/offset_{}')
         perplex_proto = os.path.join(full_path, 'misc/perplexities/offset_{}')

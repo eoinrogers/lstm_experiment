@@ -62,7 +62,6 @@ def raw_acc(tn, tp, fn, fp):
 
 def run(dataset, ground, eval_function, combine=False): 
     events = assemble_new_events(dataset)
-    print(len(dataset));exit()
     grd_max = largest_ground_id(ground) + 1
     working = []
     count = 0
@@ -83,8 +82,12 @@ def run(dataset, ground, eval_function, combine=False):
 
 if __name__ == '__main__': 
     import integrate_links as il
-    ground = il.load_ground_truth('/media/eoin/BigDisk/hierarchy/Layer 5/train_ground.txt')
-    dataset = il.gen_links.load_dataset('/media/eoin/BigDisk/hierarchy/Layer 5/test')
-    run(dataset, ground, precision, True)
+    import os
+    for f in os.listdir('/media/eoin/BigDisk'): 
+        if not f.startswith('run_num_layers'): continue
+        print(f)
+        ground = il.load_ground_truth(os.path.join(os.path.join('/media/eoin/BigDisk', f), 'Layer 1/train_ground.txt'))
+        dataset = il.gen_links.load_dataset(os.path.join(os.path.join('/media/eoin/BigDisk', f), 'Layer 1/test'))
+        run(dataset, ground, precision, True)
 
 
