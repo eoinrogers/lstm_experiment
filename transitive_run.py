@@ -20,6 +20,7 @@ def build_delta_files(probability_file_proto, delta_file_proto):
 
 def shuffle_list(l): 
     indices = []
+    print(len(l))
     while len(indices) < len(l): 
         i = random.randint(0, len(l) - 1)
         if i not in indices: indices.append(i)
@@ -63,6 +64,38 @@ def expand_new_dataset(incoming_dataset_dir, outgoing_dataset_dir, incoming_grou
     new_link.save_dataset(new_dataset, outgoing_dataset_dir)
     new_link.save_ground_truth(new_ground, outgoing_ground_file)
 
+def expand_new_dataset_2(incoming_dataset_dir, outgoing_dataset_dir, incoming_ground_file, outgoing_ground_file, n, blocks=10): 
+    ground = new_link.load_ground_truth(incoming_ground_file)
+    dataset = new_link.load_dataset(incoming_dataset_dir)
+    output = []
+    assert(len(ground) == len(dataset) and blocks < len(ground))
+    
+    split_points = []
+    for item in range(blocks - 1): 
+        r = random.randint(0, len(ground) - 1)
+        while r in split_points: n = random.randint(0, len(ground) - 2)
+        split_points.append(r)
+    split_points.append(len(ground))
+    
+    split_points.sort()
+    selected_blocks = []
+    i = 0
+    for end in split_points: 
+        dataset_block = dataset[i:end]
+        ground_block = ground[i:end]
+        for x in range(n): 
+            selected_blocks.append((dataset_block, ground_block))
+        i = end
+    
+    selected_blocks = shuffle_list(selected_blocks)
+    new_dataset = []
+    new_ground = []
+    for d, g in selected_blocks:
+        new_dataset.extend(d)
+        new_ground.extend(g)
+    new_link.save_dataset(new_dataset, outgoing_dataset_dir)
+    new_link.save_ground_truth(new_ground, outgoing_ground_file)
+
 def run_for_single_layer(input_training_data_dir, input_testing_data_dir, network_save_path, probs_proto, words2id_proto, perplex_proto, deltas_proto, incoming_types_file, window_length, lookahead_length, \
                          output_training_dir, output_testing_dir, input_training_ground_file, output_training_ground_file, output_testing_ground_file, linkset_file, outgoing_types_file, copy_dataset, increase_by, \
                          layer_mult, learning_rate_decay, cluster_threshold):
@@ -78,7 +111,7 @@ def run_for_single_layer(input_training_data_dir, input_testing_data_dir, networ
     # input_testing_data_dir, input_training_ground_file, outgoing_types_file, final_linkset, output_testing_data_dir, output_testing_ground_file
     new_link.integrate_links(input_testing_data_dir, input_training_ground_file, outgoing_types_file, linkset_file, output_testing_dir, output_testing_ground_file, cluster_threshold)
     # output_testing_data_dir, output_training_data_dir, output_testing_ground_file, output_training_ground_file, copy_dataset
-    expand_new_dataset(output_testing_dir, output_training_dir, output_testing_ground_file, output_training_ground_file, copy_dataset)
+    expand_new_dataset_2(output_testing_dir, output_training_dir, output_testing_ground_file, output_training_ground_file, copy_dataset)
 
 def main(input_training_data_dir, input_testing_data_dir, input_training_ground_file, working_dir, num_layers, window_length, lookahead_length, \
          copy_dataset=5, purge_old=True, ask_before_deleting=True, increase_by=0, layer_mult=1, lr_degrade=1, cluster_threshold=0): 
@@ -136,8 +169,8 @@ def main(input_training_data_dir, input_testing_data_dir, input_training_ground_
 if __name__ == '__main__':
     import time
     start_time = time.time()
-    expand_new_dataset('/home/eoin/programming/newlstm/experiment_thing/test_data', '/home/eoin/programming/newlstm/experiment_thing/train2', \
-                       '/media/eoin/BigDisk/kyoto3/k3_ground_non_interleaved.txt', '/home/eoin/programming/newlstm/experiment_thing/ground2.txt', 5);exit()
+    expand_new_dataset_2('/home/eoin/programming/newlstm/experiment_thing/test_data', '/home/eoin/programming/newlstm/experiment_thing/train2', \
+                       '/media/eoin/BigDisk/kyoto3/k3_ground_non_interleaved.txt', '/home/eoin/programming/newlstm/experiment_thing/ground2.txt', 5)
     main('/home/eoin/programming/newlstm/experiment_thing/train2', '/home/eoin/programming/newlstm/experiment_thing/test_data', \
          '/home/eoin/programming/newlstm/experiment_thing/ground2.txt', '/media/eoin/BigDisk/hierarchy', 4, 20, 10, purge_old=True, \
          increase_by=0, ask_before_deleting=True, layer_mult=1.5, lr_degrade=2)
