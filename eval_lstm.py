@@ -23,11 +23,9 @@ Offset: 20, Accuracy: 94.47%
 
 import os, reader
 
-
-
 def pre_load_everything(shell_script, probabilities, word2id, test_directory): 
-    probs_files = '/media/eoin/BigDisk/hierarchy/Layer 4/misc/probabilities/offset_{}'
-    word2id_files = '/media/eoin/BigDisk/hierarchy/Layer 4/misc/word2ids/offset_{}'
+    probs_files = '/media/eoin/BigDisk/run_num_layers=4_window_length=20_lookahead_length=20_min_occur_threshold=10_sizeacct=True_layer_increase=0_increase_by=0_lr_degrade_pt=0.9_lr_degrade_inc=0/Layer 4/misc/probabilities/offset_{}'
+    word2id_files = '/media/eoin/BigDisk/run_num_layers=4_window_length=20_lookahead_length=20_min_occur_threshold=10_sizeacct=True_layer_increase=0_increase_by=0_lr_degrade_pt=0.9_lr_degrade_inc=0/Layer 4/misc/word2ids/offset_{}'
     test_data = [os.path.join(test_directory, item) for item in 'ptb.train.txt ptb.valid.txt ptb.test.txt'.split()]
     data = []
     for item in test_data: 
@@ -72,12 +70,14 @@ def eval_single_offset(probs_file, word2ids_file, data, lookahead_offset, n):
     return (score / i) * 100
 
 if __name__ == '__main__':
-    probs_files, words2id_files, data = pre_load_everything('run.sh', 'PROBABILITY_FILE', 'WORD2ID_FILE', '//media/eoin/BigDisk/hierarchy/Layer 3/test')
+    probs_files, words2id_files, data = pre_load_everything('run.sh', 'PROBABILITY_FILE', 'WORD2ID_FILE', '/media/eoin/BigDisk/run_num_layers=4_window_length=20_lookahead_length=20_min_occur_threshold=10_sizeacct=True_layer_increase=0_increase_by=0_lr_degrade_pt=0.9_lr_degrade_inc=0/Layer 3/test')
     offset = 1
     while os.path.exists(probs_files.format(offset)): 
         print('Offset: {}, Accuracy: {:.2f}%'.format(offset, eval_single_offset(probs_files, words2id_files, data, offset, 3)))
         offset += 1
-
+    if offset == 1: 
+        import sys
+        print('No networks found', file=sys.stderr)
 
 
 

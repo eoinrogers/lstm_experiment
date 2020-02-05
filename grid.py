@@ -95,8 +95,8 @@ def main(default_inputs, search_inputs, function, name_arg):
 if __name__ == '__main__':
     defaults_dict = { 'input_training_data_dir' : '/home/eoin/programming/newlstm/experiment_thing/train_data', 'input_testing_data_dir' : '/home/eoin/programming/newlstm/experiment_thing/test_data', \
                  'input_training_ground_file' : '/media/eoin/BigDisk/kyoto3/k3_ground_non_interleaved.txt', 'num_layers' : 4, \
-                 'purge_old' : False, 'copy_dataset' : 5, 'ask_before_deleting' : False }
-    search = { 'num_layers' : [4], 'window_length' : [40, 20], 'lookahead_length' : [10], 'min_occur_threshold' : [10], 'sizeacct' : [True], \
+                 'purge_old' : True, 'copy_dataset' : 5, 'ask_before_deleting' : False }
+    search = { 'num_layers' : [4], 'window_length' : [20, 30], 'lookahead_length' : [20], 'min_occur_threshold' : [10], 'sizeacct' : [True], \
                'layer_increase' : [0], 'increase_by' : [0], 'lr_degrade_pt' : [.9], 'lr_degrade_inc' : [0] }
     main(defaults_dict, search, run.main, 'working_dir')
 

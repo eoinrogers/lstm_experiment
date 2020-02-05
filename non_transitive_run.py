@@ -1,6 +1,6 @@
 import gen_links, integrate_links as intlks, subprocess, random, os, shutil
 
-def run_network(training_data, network_save_path, probability_file_proto, word2id_file_proto, testing_data, perplexity_file_proto, increase_by, layer_mult, lr_degrade_pt): 
+def run_network(training_data, network_save_path, probability_file_proto, word2id_file_proto, testing_data, perplexity_file_proto, increase_by, layer_mult, lr_degrade_pt, window_length): 
     #python3 ptb_word_lm.py --data_path=$K3_TRAIN_ROOT --save_path=$K3_TRAIN_ROOT/$INDEX --probs=$PROBABILITY_FILE --word2id=$WORD2ID_FILE --test=$K3_TEST_ROOT --perplex=$PERPLEXITY_FILE
     args = ['--data_path={}'.format(training_data), '--save_path={}'.format(network_save_path), \
             '--probs={}'.format(probability_file_proto), '--word2id={}'.format(word2id_file_proto), \
@@ -87,12 +87,12 @@ def run_for_single_layer(input_training_data_dir, input_testing_data_dir, networ
                          input_training_ground_file, output_training_ground_file, output_testing_ground_file, final_linkset, outgoing_types_file, min_occur_threshold, \
                          sizeacct, increase_by, copy_dataset, layer_mult, lr_degrade_pt): 
     increase = 0
-    #for i in range(lookahead_length): 
-    #    network = os.path.join(network_save_path, str(i + 1))
-    #    mkdir(network)
-    #    run_network(input_training_data_dir, network, probability_file_proto, word2id_file_proto, input_testing_data_dir, perplexity_file_proto, increase, layer_mult, lr_degrade_pt)
-    #    if increase_by > 0: increase += increase_by 
-    #build_delta_files(probability_file_proto, delta_file_proto)
+    for i in range(lookahead_length): 
+        network = os.path.join(network_save_path, str(i + 1))
+        mkdir(network)
+        run_network(input_training_data_dir, network, probability_file_proto, word2id_file_proto, input_testing_data_dir, perplexity_file_proto, increase, layer_mult, lr_degrade_pt, window_length)
+        if increase_by > 0: increase += increase_by 
+    build_delta_files(probability_file_proto, delta_file_proto)
     generate_links(input_testing_data_dir, delta_file_proto, ll_links_file_proto, word2id_file_proto, perplexity_file_proto, window_length, lookahead_length)
     integrate_links(input_testing_data_dir, ll_links_file_proto, incoming_types_file, outgoing_types_file, input_training_ground_file, final_linkset, output_testing_data_dir, \
                     output_testing_ground_file, min_occur_threshold, sizeacct)

@@ -1,6 +1,5 @@
 def insert_item(output, numbers, item): 
     inum = int(item.strip().split('_')[-1])
-    print(inum)
     for i in range(len(numbers)): 
         if numbers[i] > inum: 
             numbers = numbers[:i] + [inum] + numbers[i:]
@@ -15,7 +14,6 @@ def assemble_new_events(dataset):
     numbers = []
     for item in dataset: 
         if item.startswith('new_event') and item not in output: 
-            print(len(output), len(numbers), len(dataset), item)
             output, numbers = insert_item(output, numbers, item)
     return output
 
@@ -60,34 +58,44 @@ def f1_score(tn, tp, fn, fp):
 def raw_acc(tn, tp, fn, fp): 
     return (tp) / (fn + fp + tp + tn)
 
-def run(dataset, ground, eval_function, combine=False): 
+def run(dataset, ground, eval_function, combine=False, full_results=True): 
     events = assemble_new_events(dataset)
     grd_max = largest_ground_id(ground) + 1
     working = []
     count = 0
+    avg = 0
     for event in events: 
-        print('{} & '.format(event.replace('_', '\\_')), end='')
+        if full_results: print('{} & '.format(event.replace('_', '\\_')), end='')
         for grd in range(grd_max): 
             results = correlation(dataset, event, ground, grd)
             evaluation = eval_function(*results)
-            if not combine: print('{} '.format(evaluation), end='')
+            if not combine and full_results: print('{} '.format(evaluation), end='')
             else: working.append(evaluation)
         if combine: 
             value = max(working)
-            print('{} \\\\'.format(value))
+            if full_results: print('{} \\\\'.format(value))
             working = []
             if value >= .5: count += 1
+            avg += value
         else: print('')
-    print(count / len(events))
+    print(count / len(events), avg / len(events))
 
 if __name__ == '__main__': 
     import integrate_links as il
     import os
+    location = '/media/eoin/BigDisk/hierarchy'
+    for i in range(4): 
+        ground_path = os.path.join(location, 'Layer {}/train_ground.txt'.format(i+1))
+        data_path = os.path.join(location, 'Layer {}/test'.format(i+1))
+        ground = il.load_ground_truth(ground_path)
+        dataset = il.gen_links.load_dataset(data_path)
+        run(dataset, ground, precision, True, False)
+    exit()
     for f in os.listdir('/media/eoin/BigDisk'): 
         if not f.startswith('run_num_layers'): continue
         print(f)
         ground = il.load_ground_truth(os.path.join(os.path.join('/media/eoin/BigDisk', f), 'Layer 1/train_ground.txt'))
         dataset = il.gen_links.load_dataset(os.path.join(os.path.join('/media/eoin/BigDisk', f), 'Layer 1/test'))
-        run(dataset, ground, precision, True)
+        run(dataset, ground, precision, True, False)
 
 

@@ -1,7 +1,7 @@
 Incoming files:
-/media/eoin/BigDisk/run_num_layers=4_window_length=20_lookahead_length=10_min_occur_threshold=10_sizeacct=True_layer_increase=0_increase_by=0_lr_degrade_pt=0.9_lr_degrade_inc=0/Layer 4/test
-/media/eoin/BigDisk/run_num_layers=4_window_length=20_lookahead_length=10_min_occur_threshold=10_sizeacct=True_layer_increase=0_increase_by=0_lr_degrade_pt=0.9_lr_degrade_inc=0/Layer 4/test_ground.txt
+/home/eoin/programming/newlstm/experiment_thing/test_data
+/media/eoin/BigDisk/kyoto3/k3_ground_non_interleaved.txt
 
 Outgoing files:
-/media/eoin/BigDisk/run_num_layers=4_window_length=20_lookahead_length=10_min_occur_threshold=10_sizeacct=True_layer_increase=0_increase_by=0_lr_degrade_pt=0.9_lr_degrade_inc=0/Layer 4/train
-/media/eoin/BigDisk/run_num_layers=4_window_length=20_lookahead_length=10_min_occur_threshold=10_sizeacct=True_layer_increase=0_increase_by=0_lr_degrade_pt=0.9_lr_degrade_inc=0/Layer 4/train_ground.txt
+/home/eoin/programming/newlstm/experiment_thing/train2
+/home/eoin/programming/newlstm/experiment_thing/ground2.txt

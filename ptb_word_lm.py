@@ -98,6 +98,7 @@ flags.DEFINE_string('test', None,
                     'Path to the directory containing the test dataset')
 flags.DEFINE_string('perplex', None, 
                     'Path to the file to store ther LSTM perplexities')
+flags.DEFINE_integer('winlen', 10, 'Window length')
 flags.DEFINE_integer('increase', 0, 'Used to increase training epochs past 20')
 flags.DEFINE_float('lmult', 1, 'Used to increase the size of hidden layers')
 flags.DEFINE_float('lr_degr', 1, 'Used to degrade the learning rate at the appropriate time')
@@ -340,7 +341,7 @@ class SmallConfig(object):
   init_scale = 0.1
   learning_rate = 1.0
   max_grad_norm = 5
-  num_layers = 2
+  num_layers = 3
   num_steps = 20
   hidden_size = 150
   max_epoch = 6
@@ -499,14 +500,17 @@ def main(_):
 
   raw_train_data = reader.ptb_raw_data(FLAGS.data_path, word2id_location=FLAGS.word2id.format(lookahead))
   raw_test_data = reader.ptb_raw_data(FLAGS.test, word2id_location=FLAGS.word2id.format(lookahead))
-  train_data, valid_data, _, _ = raw_train_data
-  a, b, c, _ = raw_test_data
+  train_data, valid_data, _, train_vocab_size = raw_train_data
+  a, b, c, test_vocab_size = raw_test_data
   test_data = a + b + c
+  vocab_size = max(train_vocab_size, test_vocab_size)
 
   config = get_config()
+  config.vocab_size = vocab_size
   eval_config = get_config()
   eval_config.batch_size = 1
   eval_config.num_steps = 1
+  eval_config.vocab_size = vocab_size
   if increase_by > 0: 
         config.max_max_epoch += increase_by
   if FLAGS.lmult > 1: 
@@ -515,8 +519,9 @@ def main(_):
         config.hidden_size = round(config.hidden_size)
         eval_config.hidden_size = round(eval_config.hidden_size)
         #config.max_max_epoch += 5
-  if FLAGS.lr_degr < 1: 
-        config.max_epoch = round(config.max_max_epoch * FLAGS.lr_degr)
+  config.num_steps = FLAGS.winlen
+  if FLAGS.lr_degr != 1: 
+        config.max_epoch = round(config.max_epoch * FLAGS.lr_degr)
   print('Hidden size = {}\nLearning rate degredation threshold = {}\nEpochs = {}'.format(config.hidden_size, config.max_epoch, config.max_max_epoch))
 
   with tf.Graph().as_default():
@@ -566,7 +571,7 @@ def main(_):
         lr_decay = config.lr_decay ** max(i + 1 - config.max_epoch, 0.0)
         m.assign_lr(session, config.learning_rate * lr_decay)
 
-        print("Epoch: %d Learning rate: %.3f" % (i + 1, session.run(m.lr)))
+        print("Epoch: %d Learning rate: %.3f Lmult: %.3f Vocab: %d" % (i + 1, session.run(m.lr), FLAGS.lmult, config.vocab_size))
         train_perplexity = run_epoch(session, m, eval_op=m.train_op,
                                      verbose=True)
         print("Epoch: %d Train Perplexity: %.3f" % (i + 1, train_perplexity))
