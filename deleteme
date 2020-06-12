@@ -1,7 +1,0 @@
-Incoming files:
-/home/eoin/programming/newlstm/experiment_thing/test_data
-/media/eoin/BigDisk/kyoto3/k3_ground_non_interleaved.txt
-
-Outgoing files:
-/home/eoin/programming/newlstm/experiment_thing/train2
-/home/eoin/programming/newlstm/experiment_thing/ground2.txt
