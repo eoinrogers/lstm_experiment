@@ -164,7 +164,6 @@ def build_links_internal(input_file_proto, output_file, dataset, thresholds, voc
             sys.stdout.flush()
         build_links_for_offset(linkset, thresholds, dataset, vocabulary, input_file_proto, lookahead_index)
         if verbose: print('Done!')
-    print(linkset)
     save_links(linkset, output_file)
 
 
@@ -218,7 +217,9 @@ def should_combine(clusters, index_one, index_two, threshold):
 
 def preliminary_cluster_dataset(dataset, linkset_contents, output_file, threshold=.5, verbose=True):
     # Display progress if requested
-    if verbose: print('Clustering links into types...', end=' ')
+    if verbose: 
+        print('Clustering links into types...', end=' ')
+        sys.stdout.flush()
     
     # Initially, give each link its own cluster
     clusters = [[link] for link in linkset_contents]
@@ -237,7 +238,7 @@ def preliminary_cluster_dataset(dataset, linkset_contents, output_file, threshol
                     if should_combine(clusters, i, j, threshold): 
                         one = clusters[i]
                         two = clusters[j]
-                        print('Combining {} and {}'.format(one, two))
+                        #print('Combining {} and {}'.format(one, two))
                         clusters.pop(i)
                         clusters.pop(j-1 if j > i else j)
                         clusters.append(one + two)
@@ -314,7 +315,9 @@ def check_previous_clusters(link_types, canonical_type_forms, previous_type_form
     if previous_type_forms is None: return
     
     # Display progress if requested
-    if verbose: print('Comparing to types found in the previous layer...', end=' ')
+    if verbose: 
+        print('Comparing to types found in the previous layer...', end=' ')
+        sys.stdout.flush()
     
     # Check to see if any types found on previous layers match any newly found types
     current_types = load_type_forms(canonical_type_forms)
@@ -353,6 +356,7 @@ def rename_types(dataset, link_types_file, type_forms_file):
         if item.startswith('new_event_'): 
             number = int(item.split('_')[2])
             if number >= newest_event: newest_event = number + 1
+    print('The newest event is {}'.format(newest_event))
     
     # Assign the n types that aren't taken from the previous layer and assign the numbers 0..n-1 to them
     numerical = [int(item) for item in link_types if item.isnumeric()]
@@ -396,8 +400,6 @@ def update_dataset(dataset, linkset_file, link_types_file):
 
 def cluster_and_change_dataset(dataset, links_file, link_types_file, type_forms_file, previous_forms_file, output, threshold=.5,
                                verbose=True): 
-    if verbose: print('Writing data out...', end=' ')
-    
     linkset = load_linkset(links_file)
     linkset_contents = get_link_contents(linkset, dataset)
     
@@ -415,6 +417,7 @@ def cluster_and_change_dataset(dataset, links_file, link_types_file, type_forms_
     dataset = update_dataset(dataset, links_file, link_types_file)
     
     # Write the new dataset out
+    if verbose: print('Writing data out...', end=' ')
     f = open(output, 'w')
     string = ''
     for item in dataset: string += '{} '.format(item)
@@ -427,7 +430,7 @@ def build_links(data_directory, probabilities_proto, vocab_file, thresholds_file
                 type_forms_file, previous_type_forms_file, new_uncompressed_file, lookahead_size, threshold): 
     dataset = lstm.load_dataset(data_directory)
     vocabulary = lstm.load_vocab(vocab_file)
-    compute_thresholds_k_means(vocabulary, probabilities_proto, lookahead_size, 2, 30, destination=thresholds_file)
+    compute_thresholds_k_means(vocabulary, probabilities_proto, lookahead_size, 2, 15, destination=thresholds_file)
     thresholds = load_thresholds(thresholds_file)
     build_links_internal(probabilities_proto, raw_links_file, dataset, thresholds, vocabulary, lookahead_size)
     cluster_and_change_dataset(dataset, raw_links_file, link_types_file, type_forms_file, previous_type_forms_file, 

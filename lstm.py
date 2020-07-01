@@ -60,6 +60,16 @@ def numberify_dataset(dataset, vocab):
     return [vocab.index(item) for item in dataset]
 
 
+def estimate_epochs(old_epochs, old_dataset, current_dataset, max_mult=2, max_epochs=None):
+    old_vocab = len(get_vocab(load_dataset(old_dataset)))
+    current_vocab = len(get_vocab(load_dataset(current_dataset)))
+    print(old_vocab, current_vocab)
+    multiplier = current_vocab / old_vocab
+    multiplier = min(multiplier, max_mult) if max_mult is not None else multiplier
+    output = multiplier * old_epochs
+    return min(output, max_epochs) if max_epochs is not None else output
+
+
 # Expected input dimension for embedding: (batch_size, window_length)
 class BatchGen(keras.utils.Sequence):
     def __init__(self, numberified_dataset, batch_size, window_size, lookahead_index, vocabulary):
@@ -88,18 +98,15 @@ class BatchGen(keras.utils.Sequence):
 
 
 def prepare_dataset(location, vocab_file):
-    raw_dataset = load_dataset(location);print(os.path.exists(vocab_file))
-    if os.path.exists(vocab_file): 
-        vocabulary = load_vocab(vocab_file)
-    else: 
-        vocabulary = get_vocab(raw_dataset)
-        save_vocab(vocabulary, vocab_file)
+    raw_dataset = load_dataset(location)
+    vocabulary = get_vocab(raw_dataset)
+    save_vocab(vocabulary, vocab_file)
     numberified_dataset = numberify_dataset(raw_dataset, vocabulary)
     return raw_dataset, vocabulary, numberified_dataset
 
 
 def train_networks(numberified_dataset, vocabulary, epochs, batch_size, window_size, lookahead_size, embedding_size, num_layers,
-     destination_proto, epoch_increment=0):
+                   destination_proto, epoch_increment=0):
     output = []
     for i in range(lookahead_size):
         lstm = build_lstm(len(vocabulary), embedding_size, window_size, [max(20, round(embedding_size * .2))] * num_layers)
