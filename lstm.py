@@ -10,7 +10,7 @@ def build_lstm(vocab_length, embedding_size, window_length, layer_map):
         if i != len(layer_map) - 1: output.add(keras.layers.LSTM(size, return_sequences=True))
         else: output.add(keras.layers.LSTM(size, return_sequences=False))
     output.add(keras.layers.Dense(vocab_length, activation='softmax'))
-    output.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    output.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['categorical_crossentropy', 'accuracy'])
     return output
 
 
@@ -97,6 +97,19 @@ class BatchGen(keras.utils.Sequence):
         return features, labels
 
 
+class TrainViaThreshold(keras.callbacks.Callback):
+    def __init__(self, threshold): 
+        self.threshold = threshold
+        self.last_three = []
+        super().__init__()
+    def on_epoch_end(self, epoch, logs={}): 
+        print('Epoch {}, loss = {}, accuracy = {}'.format(epoch, \
+               logs.get('categorical_crossentropy'), logs.get('accuracy')))
+        if logs.get('accuracy') >= self.threshold or len(self.last_three) == 3 and min(self.last_three) == max(self.last_three): 
+            self.model.stop_training = True
+        self.last_three.append(logs.get('accuracy'))
+
+
 def prepare_dataset(location, vocab_file):
     raw_dataset = load_dataset(location)
     vocabulary = get_vocab(raw_dataset)
@@ -108,9 +121,17 @@ def prepare_dataset(location, vocab_file):
 def train_networks(numberified_dataset, vocabulary, epochs, batch_size, window_size, lookahead_size, embedding_size, num_layers,
                    destination_proto, epoch_increment=0):
     output = []
+    if epochs == 'auto': 
+        epoch_increment = 0
+        verbosity = 0
+        epochs = 1000000
+        callbacks = [TrainViaThreshold(.8)]
+    else: 
+        verbosity = 1
+        callbacks = []
     for i in range(lookahead_size):
         lstm = build_lstm(len(vocabulary), embedding_size, window_size, [max(20, round(embedding_size * .2))] * num_layers)
-        lstm.fit(BatchGen(numberified_dataset, batch_size, window_size, i, vocabulary), epochs=round(epochs))
+        lstm.fit(BatchGen(numberified_dataset, batch_size, window_size, i, vocabulary), epochs=round(epochs), verbose=verbosity, callbacks=callbacks)
         output.append(lstm)
         save_path = destination_proto.format(i + 1)
         lstm.save(save_path)
@@ -183,7 +204,14 @@ def preload_query_files(query_folder_proto, lookahead_index):
         query_files[lookahead_index] = np.array(contents)
         query_counts[lookahead_index] = counts
         query_vocabs[lookahead_index] = vocabs
- 
+
+
+def unload_query_files(): 
+    global query_files, query_counts, query_vocabs
+    query_files = {}
+    query_counts = {}
+    query_vocabs = {}
+
 
 def load_query_results_fast(query_folder_proto, lookahead_index, subsample_rate=.2): 
     global query_files, query_vocabs
@@ -193,6 +221,7 @@ def load_query_results_fast(query_folder_proto, lookahead_index, subsample_rate=
         if random.random() <= subsample_rate:
             output[0, :] = line
             yield output
+    unload_query_files()
 
 
 def deltify_single_lookahead(incoming_proto, outgoing_proto, lookahead_index, vocabulary, batch_size,

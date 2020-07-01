@@ -4,12 +4,12 @@ import sys
 
 
 def load_column_across_all_probability_files(probabilities_proto, lookahead_size, column_index,
-                                             filter_negative, verbose, iterations):
+                                             filter_negative, verbose, iterations, vocab_length):
     # TODO this could almost certainly be made faster. Could we stick everything into a big
     # NumPy matrix and transpose it? 
     output = []
     if verbose: 
-        print('Gathering data to compute thresholds for event {}... '.format(column_index), 
+        print('Gathering data to compute thresholds for event {} of {}... '.format(column_index, vocab_length), 
                end='')
         sys.stdout.flush()
     for lookahead_index in range(lookahead_size): 
@@ -72,7 +72,7 @@ def compute_thresholds_k_means(vocabulary, probabilities_proto, lookahead_size, 
     # by a k-means clustering
     for column_index in range(vocab_size): 
         column = load_column_across_all_probability_files(probabilities_proto, lookahead_size, column_index, filter_negative,
-                                                          verbose, iterations)
+                                                          verbose, iterations, vocab_size)
         centroids = k_means(column, k, iterations, verbose, column_index)
         centroids.sort()
         threshold = (centroids[-1] + centroids[-2]) / 2

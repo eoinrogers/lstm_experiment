@@ -66,13 +66,13 @@ def run_for_single_layer(training_data, previous_type_forms, desired_output_dir,
 def run_for_many_layers(training_data, output_directory, window_size, lookahead_size, batch_size, epoch_increment, embedding_size, \
                         num_layers, num_network_layers, layerwise_layer_increment, layerwise_embed_mult, layerwise_epoch_increment='auto',
                         num_epochs=8, threshold=.6): 
-    old_typeforms = None
-    for i in range(num_layers): 
+    old_typeforms = '' #None
+    for i in range(1, num_layers): 
         layer_dir = os.path.join(output_directory, 'Layer {}'.format(i + 1))
         old_training_data = training_data
         training_data, old_typeforms = run_for_single_layer(training_data, old_typeforms, layer_dir, window_size, lookahead_size, \
                                                             batch_size, epoch_increment, round(embedding_size), round(num_network_layers), \
-                                                            round(num_epochs), threshold)
+                                                            round(num_epochs) if type(num_epochs) != str else num_epochs, threshold)
         num_network_layers += layerwise_layer_increment
         embedding_size *= layerwise_embed_mult
         if layerwise_epoch_increment == 'auto': 
@@ -84,6 +84,6 @@ def run_for_many_layers(training_data, output_directory, window_size, lookahead_
 if __name__ == '__main__':
     #run_for_single_layer('/media/eoin/BigDisk/kyoto3/interleaved train', None, '/media/eoin/BigDisk/new test', 10, 10, 50, 1, 100, 3, 20)
     #run_for_single_layer('/media/eoin/BigDisk/new test/output', '/media/eoin/BigDisk/new test/type forms', '/media/eoin/BigDisk/newer test', 10, 10, 50, 1, 100, 3, 20)
-    run_for_many_layers('/media/eoin/BigDisk/kyoto3/interleaved train', '/media/eoin/BigDisk/test', 10, 10, 50, 1, 120, 5, 4, 0, 1.02)
+    run_for_many_layers('/media/eoin/BigDisk/test/Layer 1/output', '/media/eoin/BigDisk/test', 10, 10, 50, 1, 120, 5, 4, 0, 1.02)
 
 
