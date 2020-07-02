@@ -431,6 +431,7 @@ def build_links(data_directory, probabilities_proto, vocab_file, thresholds_file
     dataset = lstm.load_dataset(data_directory)
     vocabulary = lstm.load_vocab(vocab_file)
     compute_thresholds_k_means(vocabulary, probabilities_proto, lookahead_size, 2, 15, destination=thresholds_file)
+    lstm.unload_query_files()
     thresholds = load_thresholds(thresholds_file)
     build_links_internal(probabilities_proto, raw_links_file, dataset, thresholds, vocabulary, lookahead_size)
     cluster_and_change_dataset(dataset, raw_links_file, link_types_file, type_forms_file, previous_type_forms_file, 

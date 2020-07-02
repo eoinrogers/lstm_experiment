@@ -221,7 +221,6 @@ def load_query_results_fast(query_folder_proto, lookahead_index, subsample_rate=
         if random.random() <= subsample_rate:
             output[0, :] = line
             yield output
-    unload_query_files()
 
 
 def deltify_single_lookahead(incoming_proto, outgoing_proto, lookahead_index, vocabulary, batch_size,
