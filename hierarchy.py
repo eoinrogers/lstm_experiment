@@ -48,26 +48,26 @@ def run_for_single_layer(training_data, previous_type_forms, desired_output_dir,
                              epoch_increment, embedding_size, num_layers)
     
     # Build the links
-    thresholds_file = os.path.join(desired_output_dir, thresholds_file)
-    linkset_file = os.path.join(desired_output_dir, linkset_file)
-    linktypes_file = os.path.join(desired_output_dir, linktypes_file)
-    typeforms_file = os.path.join(desired_output_dir, typeforms_file)
-    output_uncompressed = os.path.join(desired_output_dir, output_uncompressed)
-    links.build_links(training_data, probabilities_proto, vocabulary_file, thresholds_file, linkset_file, linktypes_file, typeforms_file, 
-                      previous_type_forms, output_uncompressed, lookahead_size, threshold)
+    thresholds_fl = os.path.join(desired_output_dir, thresholds_file)
+    linkset_fl = os.path.join(desired_output_dir, linkset_file)
+    linktypes_fl = os.path.join(desired_output_dir, linktypes_file)
+    typeforms_fl = os.path.join(desired_output_dir, typeforms_file)
+    output_uncompressed_fl = os.path.join(desired_output_dir, output_uncompressed)
+    links.build_links(training_data, probabilities_proto, vocabulary_file, thresholds_fl, linkset_fl, linktypes_fl, typeforms_fl, 
+                      previous_type_forms, output_uncompressed_fl, lookahead_size, threshold)
     
     # Compress the new dataset
-    output_dir = os.path.join(desired_output_dir, output_dir)
-    compress.compress_dataset(training_data, linkset_file, linktypes_file, output_dir, test_percent, valid_percent);print(output_dir, typeforms_file)
+    output_directory = os.path.join(desired_output_dir, output_dir)
+    compress.compress_dataset(training_data, linkset_fl, linktypes_fl, output_directory, test_percent, valid_percent);print(output_directory, typeforms_file)
     
-    return output_dir, typeforms_file
+    return output_directory, typeforms_file
 
 
 def run_for_many_layers(training_data, output_directory, window_size, lookahead_size, batch_size, epoch_increment, embedding_size, \
                         num_layers, num_network_layers, layerwise_layer_increment, layerwise_embed_mult, layerwise_epoch_increment='auto',
-                        num_epochs=8, threshold=.6): 
-    old_typeforms = None
-    for i in range(num_layers): 
+                        num_epochs=16, threshold=.6): 
+    old_typeforms = '/media/eoin/BigDisk/test/Layer 1/type forms' #None
+    for i in range(1, num_layers): 
         layer_dir = os.path.join(output_directory, 'Layer {}'.format(i + 1))
         old_training_data = training_data
         training_data, old_typeforms = run_for_single_layer(training_data, old_typeforms, layer_dir, window_size, lookahead_size, \

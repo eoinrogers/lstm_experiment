@@ -9,7 +9,7 @@ def load_column_across_all_probability_files(probabilities_proto, lookahead_size
     # NumPy matrix and transpose it? 
     output = []
     if verbose: 
-        print('Gathering data to compute thresholds for event {} of {}... '.format(column_index, vocab_length), 
+        print('Gathering data to compute thresholds for event {} of {}... '.format(column_index, vocab_length - 1), 
                end='')
         sys.stdout.flush()
     for lookahead_index in range(lookahead_size): 
